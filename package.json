@@ -1,0 +1,19 @@
+{
+  "name": "omni-socket",
+  "version": "1.0.0",
+  "description": "Standalone, multi-tenant, application-agnostic realtime Socket.IO server infrastructure.",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "socket.io",
+    "realtime",
+    "fastify",
+    "multi-tenant",
+    "infrastructure"
+  ],
+  "author": "",
+  "license": "MIT",
+  "private": true
+}
