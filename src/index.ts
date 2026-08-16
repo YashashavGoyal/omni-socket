@@ -1,10 +1,22 @@
 import Fastify from 'fastify';
 import { config } from './config/env';
+import { setupSocketIO } from './socket';
 
 const server = Fastify({
-  logger: {
-    level: config.LOG_LEVEL,
-  },
+  logger: config.NODE_ENV === 'development'
+    ? {
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          translateTime: 'HH:MM:ss Z',
+          ignore: 'pid,hostname',
+        },
+      },
+      level: config.LOG_LEVEL,
+    }
+    : {
+      level: config.LOG_LEVEL,
+    },
 });
 
 // Operational health endpoint for monitoring
@@ -15,6 +27,8 @@ server.get('/health', async (_request, reply) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+setupSocketIO(server);
 
 const start = async () => {
   try {
