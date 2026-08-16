@@ -1,4 +1,4 @@
-import { ConnectionRegistry } from '../src/connection/connection-registry';
+import { ConnectionRegistry } from '../src/modules/connection/connection-registry';
 
 console.log('--- Testing ConnectionRegistry Decoupling ---');
 const registry = new ConnectionRegistry();

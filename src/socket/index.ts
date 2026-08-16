@@ -1,7 +1,7 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { FastifyInstance } from 'fastify';
 import { config } from '../config/env';
-import { connectionRegistry } from '../connection/connection-registry';
+import { connectionRegistry } from '../modules/connection/connection-registry';
 
 export let io: SocketIOServer;
 

@@ -1,4 +1,4 @@
-import { ConnectionContext } from './connection.types';
+import { ConnectionContext } from './IConnection';
 
 export class ConnectionRegistry {
   private connectionsBySocketId = new Map<string, ConnectionContext>();
