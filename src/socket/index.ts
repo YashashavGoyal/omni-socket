@@ -2,6 +2,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import { FastifyInstance } from 'fastify';
 import { config } from '../config/env';
 import { authenticateHandshake } from '../modules/auth/auth.middleware';
+import { registerRoomHandlers } from '../modules/room/room.handler';
 import { connectionRegistry } from '../modules/connection/connection-registry';
 
 export let io: SocketIOServer;
@@ -25,6 +26,9 @@ export function setupSocketIO(fastifyServer: FastifyInstance): SocketIOServer {
     fastifyServer.log.info(
       `[Socket.IO] Authenticated client connected: ${socket.id} | App: ${appId} | User: ${userId}`
     );
+
+    // Register room event handlers for this socket
+    registerRoomHandlers(socket);
 
     socket.on('disconnect', (reason) => {
       connectionRegistry.unregister(socket.id);
