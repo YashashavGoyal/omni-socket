@@ -1,3 +1,4 @@
+import { cryptoService } from '../../../shared/crypto/crypto.service';
 import { ApplicationRecord, IApplicationRepository } from '../IApplication';
 
 export class InMemoryApplicationRepository implements IApplicationRepository {
@@ -9,7 +10,7 @@ export class InMemoryApplicationRepository implements IApplicationRepository {
       id: 'app_ourtime_001',
       applicationId: 'ourtime',
       name: 'ourTime Video Platform',
-      apiKeyHash: 'ourtime_secret_key_v1',
+      apiKeyHash: cryptoService.hash('ourtime_secret_key_v1'),
       enabled: true,
       createdAt: now,
       updatedAt: now,
@@ -19,7 +20,7 @@ export class InMemoryApplicationRepository implements IApplicationRepository {
       id: 'app_demochat_002',
       applicationId: 'demo-chat',
       name: 'Demo Chat Application',
-      apiKeyHash: 'demochat_secret_key_v1',
+      apiKeyHash: cryptoService.hash('demochat_secret_key_v1'),
       enabled: true,
       createdAt: now,
       updatedAt: now,
