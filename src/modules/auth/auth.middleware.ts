@@ -1,6 +1,7 @@
 import { Socket } from 'socket.io';
 import { applicationService } from '../application/application.service';
 import { connectionRegistry } from '../connection/connection-registry';
+import { UnauthorizedError, ERROR_MESSAGES } from '../../shared/errors';
 import { AuthHandshakePayload } from './IAuth';
 
 export async function authenticateHandshake(
@@ -11,12 +12,12 @@ export async function authenticateHandshake(
     const auth = socket.handshake.auth as AuthHandshakePayload;
 
     if (!auth || !auth.applicationId || !auth.apiKey) {
-      return next(new Error('Authentication failed: Missing applicationId or apiKey in handshake.auth'));
+      return next(new UnauthorizedError(ERROR_MESSAGES.MISSING_HANDSHAKE_AUTH));
     }
 
     const isValid = await applicationService.validateAppCredentials(auth.applicationId, auth.apiKey);
     if (!isValid) {
-      return next(new Error('Authentication failed: Invalid application credentials'));
+      return next(new UnauthorizedError(ERROR_MESSAGES.INVALID_CREDENTIALS));
     }
 
     // Attach authenticated context to socket.data
@@ -34,6 +35,6 @@ export async function authenticateHandshake(
 
     return next();
   } catch (error) {
-    return next(new Error('Authentication failed: Internal server error'));
+    return next(new UnauthorizedError('Authentication failed: Internal server error'));
   }
 }
