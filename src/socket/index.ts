@@ -4,6 +4,7 @@ import { config } from '../config/env';
 import { authenticateHandshake } from '../modules/auth/auth.middleware';
 import { registerRoomHandlers } from '../modules/room/room.handler';
 import { registerEventHandlers } from '../modules/event/event.handler';
+import { registerPresenceHandlers, presenceService } from '../modules/presence';
 import { connectionRegistry } from '../modules/connection/connection-registry';
 
 export let io: SocketIOServer;
@@ -32,9 +33,15 @@ export function setupSocketIO(fastifyServer: FastifyInstance): SocketIOServer {
     // Register module event handlers
     registerRoomHandlers(socket);
     registerEventHandlers(socket);
+    registerPresenceHandlers(socket);
 
     socket.on('disconnect', (reason) => {
       connectionRegistry.unregister(socket.id);
+
+      if (appId && userId) {
+        presenceService.onUserDisconnect(appId, userId);
+      }
+
       fastifyServer.log.info(
         `[Socket.IO] Client disconnected: ${socket.id} (Reason: ${reason}) | Remaining connections: ${connectionRegistry.getActiveConnectionCount()}`
       );
