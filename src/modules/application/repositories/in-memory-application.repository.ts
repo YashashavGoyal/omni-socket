@@ -12,6 +12,11 @@ export class InMemoryApplicationRepository implements IApplicationRepository {
       name: 'ourTime Video Platform',
       apiKeyHash: cryptoService.hash('ourtime_secret_key_v1'),
       enabled: true,
+      features: {
+        presence: true,
+        rooms: true,
+        events: true,
+      },
       createdAt: now,
       updatedAt: now,
     });
@@ -22,6 +27,11 @@ export class InMemoryApplicationRepository implements IApplicationRepository {
       name: 'Demo Chat Application',
       apiKeyHash: cryptoService.hash('demochat_secret_key_v1'),
       enabled: true,
+      features: {
+        presence: true,
+        rooms: true,
+        events: true,
+      },
       createdAt: now,
       updatedAt: now,
     });
