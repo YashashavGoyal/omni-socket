@@ -3,6 +3,7 @@ import { config } from './config/env';
 import { setupSocketIO } from './socket';
 import { fastifyErrorHandler } from './shared/errors';
 import { registerHealthRoutes } from './modules/health';
+import { registerDocsRoutes } from './modules/docs/docs.controller';
 import { registerGracefulShutdown } from './shared/lifecycle';
 
 const server = Fastify({
@@ -25,8 +26,9 @@ const server = Fastify({
 // Attach central Fastify error handler middleware
 server.setErrorHandler(fastifyErrorHandler);
 
-// Register operational readiness health endpoints
+// Register operational readiness health endpoints & self-documenting REST routes
 registerHealthRoutes(server);
+registerDocsRoutes(server);
 
 // Attach Socket.IO transport layer
 const io = setupSocketIO(server);

@@ -9,6 +9,7 @@ It serves as a standalone real-time messaging gateway for multiple client applic
 ## 🌟 Key Features
 
 * **Multi-Tenant Isolation**: Tenant applications (`applicationId`) share a single engine with complete event and room-level state isolation.
+* **AI-Native Self-Documentation**: `/llms.txt` and `/docs` REST endpoints with content negotiation (`Accept: text/markdown`) for AI bots & developers.
 * **Dual-Tier Rate Limiting**: Socket-level (30 requests/10s) and Application-level (1000 requests/10s) sliding-window rate limit protection.
 * **Granular Feature Guarding**: Enable or disable features (`rooms`, `presence`, `events`) per tenant application on the fly.
 * **Presence & Heartbeat Engine**: Room-scoped status updates (`online`, `away`, `busy`, `offline`) and automated ping/pong heartbeat tracking.
@@ -16,6 +17,19 @@ It serves as a standalone real-time messaging gateway for multiple client applic
 * **Structured Audit Observability**: JSON log format with correlation IDs, action timing, and request tracing.
 * **Graceful Teardown**: Intercepts `SIGTERM` / `SIGINT`, notifies connected clients (`server:shutdown`), flushes packets, and closes cleanly.
 * **Production Containerization**: Multi-stage Dockerfile (`node:20-alpine`) with unprivileged `node` user and native Node HTTP health check probes.
+
+---
+
+## 🤖 AI-Native & Self-Documenting REST Endpoints
+
+OmniSocket features built-in content-negotiated documentation endpoints so LLMs, AI coding assistants, and developers can fetch the live event contract directly from any running instance.
+
+* **GET `/llms.txt`**: Aggregated raw GitHub-Flavored Markdown for AI agents.
+* **GET `/docs`**: Topic index JSON (or raw Markdown if requested with `Accept: text/markdown` or `?format=md`).
+* **GET `/docs/overview`**: Handshake, authentication headers, error codes.
+* **GET `/docs/rooms`**: Room isolation, joining, leaving, broadcasting.
+* **GET `/docs/presence`**: Presence status tracking & heartbeat ping/pong.
+* **GET `/docs/events`**: Custom event routing payload schemas.
 
 ---
 
@@ -30,7 +44,7 @@ It serves as a standalone real-time messaging gateway for multiple client applic
                                 v
                +----------------------------------+
                |      Fastify / Socket.IO         |
-               |      Handshake Middleware        |
+               |   Handshake & Docs Middleware    |
                +----------------------------------+
                                 |
              +------------------+------------------+
@@ -127,5 +141,3 @@ docker run -d -p 4000:4000 --name omni-socket omni-socket:latest
 ## 📖 API & Event Specifications
 
 For full WebSocket event payload contracts and REST health probe details, see [docs/api-spec.md](docs/api-spec.md).
-
----
