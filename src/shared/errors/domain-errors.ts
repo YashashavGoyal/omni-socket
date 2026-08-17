@@ -40,11 +40,20 @@ export class ConflictError extends AppError {
   }
 }
 
-export class RateLimitError extends AppError {
+export class TooManyRequestsError extends AppError {
   constructor(
     message: string = ERROR_MESSAGES.RATE_LIMIT_EXCEEDED,
     details?: Record<string, unknown>
   ) {
-    super(message, HTTP_STATUS_CODE.TOO_MANY_REQUESTS, ERROR_CODES.RATE_LIMITED, details);
+    super(message, HTTP_STATUS_CODE.TOO_MANY_REQUESTS, ERROR_CODES.TOO_MANY_REQUESTS, details);
+  }
+}
+
+export class InternalServerError extends AppError {
+  constructor(
+    message: string = ERROR_MESSAGES.INTERNAL_SERVER_ERROR,
+    details?: Record<string, unknown>
+  ) {
+    super(message, HTTP_STATUS_CODE.INTERNAL_SERVER_ERROR, ERROR_CODES.INTERNAL_SERVER_ERROR, details);
   }
 }

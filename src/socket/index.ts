@@ -15,6 +15,7 @@ export function setupSocketIO(fastifyServer: FastifyInstance): SocketIOServer {
       methods: ['GET', 'POST'],
     },
     transports: ['websocket', 'polling'],
+    maxHttpBufferSize: 1e6, // Safety Limit: 1MB Max WebSocket Payload Size
   });
 
   // Intercept connection handshakes with generic authentication

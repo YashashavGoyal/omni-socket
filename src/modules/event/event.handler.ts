@@ -1,5 +1,6 @@
 import { Socket } from 'socket.io';
 import { eventService } from './event.service';
+import { rateLimiterService } from '../../shared/rate-limiter/rate-limiter.service';
 import { formatErrorResponse } from '../../shared/errors';
 import { EmitEventPayload } from './IEvent';
 
@@ -13,6 +14,7 @@ export function registerEventHandlers(socket: Socket): void {
   // Handle generic custom event emitting
   socket.on('event:emit', (payload: EmitEventPayload, ack?: (res: unknown) => void) => {
     try {
+      rateLimiterService.assertDualTierRateLimit(socket);
       eventService.emitEvent(socket, payload);
 
       const response = {

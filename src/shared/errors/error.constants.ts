@@ -27,7 +27,7 @@ export const ERROR_CODES = {
   FORBIDDEN: 'FORBIDDEN',
   NOT_FOUND: 'NOT_FOUND',
   CONFLICT: 'CONFLICT',
-  RATE_LIMITED: 'RATE_LIMITED',
+  TOO_MANY_REQUESTS: 'TOO_MANY_REQUESTS',
   INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
 } as const;
 
@@ -35,10 +35,11 @@ export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
 
 
 export const ERROR_MESSAGES = {
-  MISSING_HANDSHAKE_AUTH: 'Authentication failed: Missing applicationId or apiKey in handshake.auth',
+  MISSING_HANDSHAKE_AUTH: 'Missing applicationId or apiKey in handshake.auth',
   INVALID_CREDENTIALS: 'Authentication failed: Invalid application credentials',
   UNAUTHORIZED_ACCESS: 'Authentication required to perform this action',
   FORBIDDEN_RESOURCE: 'Access denied: You do not have permission for this resource',
+  APPLICATION_NOT_FOUND: 'Application not found',
   RESOURCE_NOT_FOUND: 'The requested resource was not found',
   RATE_LIMIT_EXCEEDED: 'Rate limit exceeded. Please try again later',
   INTERNAL_SERVER_ERROR: 'An unexpected internal server error occurred',

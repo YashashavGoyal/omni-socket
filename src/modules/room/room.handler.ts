@@ -1,5 +1,6 @@
 import { Socket } from 'socket.io';
 import { roomService } from './room.service';
+import { rateLimiterService } from '../../shared/rate-limiter/rate-limiter.service';
 import { formatErrorResponse } from '../../shared/errors';
 import { JoinRoomPayload, LeaveRoomPayload, BroadcastRoomPayload } from './IRoom';
 
@@ -7,6 +8,7 @@ export function registerRoomHandlers(socket: Socket): void {
   // Handle room:join
   socket.on('room:join', async (payload: JoinRoomPayload, ack?: (res: unknown) => void) => {
     try {
+      rateLimiterService.assertDualTierRateLimit(socket);
       const scopedRoomKey = await roomService.joinRoom(socket, payload);
 
       const response = {
@@ -28,6 +30,7 @@ export function registerRoomHandlers(socket: Socket): void {
   // Handle room:leave
   socket.on('room:leave', async (payload: LeaveRoomPayload, ack?: (res: unknown) => void) => {
     try {
+      rateLimiterService.assertDualTierRateLimit(socket);
       const scopedRoomKey = await roomService.leaveRoom(socket, payload);
 
       const response = {
@@ -49,6 +52,7 @@ export function registerRoomHandlers(socket: Socket): void {
   // Handle room:broadcast
   socket.on('room:broadcast', (payload: BroadcastRoomPayload, ack?: (res: unknown) => void) => {
     try {
+      rateLimiterService.assertDualTierRateLimit(socket);
       const scopedRoomKey = roomService.broadcastToRoom(socket, payload);
 
       const response = {
