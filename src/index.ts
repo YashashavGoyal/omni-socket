@@ -3,6 +3,7 @@ import { config } from './config/env';
 import { setupSocketIO } from './socket';
 import { fastifyErrorHandler } from './shared/errors';
 import { registerHealthRoutes } from './modules/health';
+import { registerGracefulShutdown } from './shared/lifecycle';
 
 const server = Fastify({
   logger: config.NODE_ENV === 'development'
@@ -28,7 +29,10 @@ server.setErrorHandler(fastifyErrorHandler);
 registerHealthRoutes(server);
 
 // Attach Socket.IO transport layer
-setupSocketIO(server);
+const io = setupSocketIO(server);
+
+// Attach OS signal graceful shutdown handler
+registerGracefulShutdown(server, io);
 
 const start = async () => {
   try {
