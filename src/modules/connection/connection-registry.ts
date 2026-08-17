@@ -66,6 +66,13 @@ export class ConnectionRegistry {
   public getActiveUserCount(): number {
     return this.socketsByUserId.size;
   }
+
+  /**
+   * Health check verifying internal connection registry state.
+   */
+  public isHealthy(): boolean {
+    return this.connectionsBySocketId !== undefined && this.socketsByUserId !== undefined;
+  }
 }
 
 export const connectionRegistry = new ConnectionRegistry();

@@ -42,6 +42,18 @@ export class ApplicationService {
   public getScopedRoomKey(applicationId: string, roomId: string): string {
     return applicationRepository.getScopedRoomKey(applicationId, roomId);
   }
+
+  /**
+   * Dynamic health check verifying repository accessibility.
+   */
+  public async isHealthy(): Promise<boolean> {
+    try {
+      await applicationRepository.listApps();
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }
 
 export const applicationService = new ApplicationService();

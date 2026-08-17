@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import { config } from './config/env';
 import { setupSocketIO } from './socket';
 import { fastifyErrorHandler } from './shared/errors';
+import { registerHealthRoutes } from './modules/health';
 
 const server = Fastify({
   logger: config.NODE_ENV === 'development'
@@ -23,14 +24,8 @@ const server = Fastify({
 // Attach central Fastify error handler middleware
 server.setErrorHandler(fastifyErrorHandler);
 
-// Operational health endpoint
-server.get('/health', async (_request, reply) => {
-  return reply.status(200).send({
-    status: 'ok',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
-  });
-});
+// Register operational readiness health endpoints
+registerHealthRoutes(server);
 
 // Attach Socket.IO transport layer
 setupSocketIO(server);
