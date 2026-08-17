@@ -4,11 +4,12 @@ import { rateLimiterService } from '../../shared/rate-limiter/rate-limiter.servi
 import { featureGuardService } from '../application/feature-guard.service';
 import { formatErrorResponse } from '../../shared/errors';
 import { auditLogger } from '../../shared/logger/audit-logger';
+import { securitySanitizer } from '../../shared/security/security-sanitizer';
 import { JoinRoomPayload, LeaveRoomPayload, BroadcastRoomPayload } from './IRoom';
 
 export function registerRoomHandlers(socket: Socket): void {
   // Handle room:join
-  socket.on('room:join', async (payload: JoinRoomPayload, ack?: (res: unknown) => void) => {
+  socket.on('room:join', async (rawPayload: JoinRoomPayload, ack?: (res: unknown) => void) => {
     const startTime = performance.now();
     const correlationId = auditLogger.generateCorrelationId();
 
@@ -16,6 +17,7 @@ export function registerRoomHandlers(socket: Socket): void {
       rateLimiterService.assertDualTierRateLimit(socket);
       await featureGuardService.assertFeature(socket, 'rooms');
 
+      const payload = securitySanitizer.sanitize(rawPayload);
       const scopedRoomKey = await roomService.joinRoom(socket, payload);
 
       const response = {
@@ -51,13 +53,13 @@ export function registerRoomHandlers(socket: Socket): void {
         action: 'room:join',
         status: 'FAILURE',
         durationMs: performance.now() - startTime,
-        details: { roomId: payload.roomId, error: errorResponse.message },
+        details: { roomId: rawPayload?.roomId, error: errorResponse.message },
       });
     }
   });
 
   // Handle room:leave
-  socket.on('room:leave', async (payload: LeaveRoomPayload, ack?: (res: unknown) => void) => {
+  socket.on('room:leave', async (rawPayload: LeaveRoomPayload, ack?: (res: unknown) => void) => {
     const startTime = performance.now();
     const correlationId = auditLogger.generateCorrelationId();
 
@@ -65,6 +67,7 @@ export function registerRoomHandlers(socket: Socket): void {
       rateLimiterService.assertDualTierRateLimit(socket);
       await featureGuardService.assertFeature(socket, 'rooms');
 
+      const payload = securitySanitizer.sanitize(rawPayload);
       const scopedRoomKey = await roomService.leaveRoom(socket, payload);
 
       const response = {
@@ -100,13 +103,13 @@ export function registerRoomHandlers(socket: Socket): void {
         action: 'room:leave',
         status: 'FAILURE',
         durationMs: performance.now() - startTime,
-        details: { roomId: payload.roomId, error: errorResponse.message },
+        details: { roomId: rawPayload?.roomId, error: errorResponse.message },
       });
     }
   });
 
   // Handle room:broadcast
-  socket.on('room:broadcast', async (payload: BroadcastRoomPayload, ack?: (res: unknown) => void) => {
+  socket.on('room:broadcast', async (rawPayload: BroadcastRoomPayload, ack?: (res: unknown) => void) => {
     const startTime = performance.now();
     const correlationId = auditLogger.generateCorrelationId();
 
@@ -114,6 +117,7 @@ export function registerRoomHandlers(socket: Socket): void {
       rateLimiterService.assertDualTierRateLimit(socket);
       await featureGuardService.assertFeature(socket, 'rooms');
 
+      const payload = securitySanitizer.sanitize(rawPayload);
       const scopedRoomKey = roomService.broadcastToRoom(socket, payload);
 
       const response = {
@@ -148,7 +152,7 @@ export function registerRoomHandlers(socket: Socket): void {
         action: 'room:broadcast',
         status: 'FAILURE',
         durationMs: performance.now() - startTime,
-        details: { roomId: payload.roomId, error: errorResponse.message },
+        details: { roomId: rawPayload?.roomId, error: errorResponse.message },
       });
     }
   });

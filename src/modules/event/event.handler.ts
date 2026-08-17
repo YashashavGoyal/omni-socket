@@ -4,6 +4,7 @@ import { rateLimiterService } from '../../shared/rate-limiter/rate-limiter.servi
 import { featureGuardService } from '../application/feature-guard.service';
 import { formatErrorResponse } from '../../shared/errors';
 import { auditLogger } from '../../shared/logger/audit-logger';
+import { securitySanitizer } from '../../shared/security/security-sanitizer';
 import { EmitEventPayload } from './IEvent';
 
 export function registerEventHandlers(socket: Socket): void {
@@ -14,7 +15,7 @@ export function registerEventHandlers(socket: Socket): void {
   }
 
   // Handle generic custom event emitting
-  socket.on('event:emit', async (payload: EmitEventPayload, ack?: (res: unknown) => void) => {
+  socket.on('event:emit', async (rawPayload: EmitEventPayload, ack?: (res: unknown) => void) => {
     const startTime = performance.now();
     const correlationId = auditLogger.generateCorrelationId();
 
@@ -22,6 +23,7 @@ export function registerEventHandlers(socket: Socket): void {
       rateLimiterService.assertDualTierRateLimit(socket);
       await featureGuardService.assertFeature(socket, 'events');
 
+      const payload = securitySanitizer.sanitize(rawPayload);
       eventService.emitEvent(socket, payload);
 
       const response = {
@@ -57,7 +59,7 @@ export function registerEventHandlers(socket: Socket): void {
         action: 'event:emit',
         status: 'FAILURE',
         durationMs: performance.now() - startTime,
-        details: { targetType: payload.targetType, targetId: payload.targetId, error: errorResponse.message },
+        details: { targetType: rawPayload?.targetType, targetId: rawPayload?.targetId, error: errorResponse.message },
       });
     }
   });
