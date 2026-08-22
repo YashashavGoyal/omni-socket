@@ -5,11 +5,12 @@ import { featureGuardService } from '../application/feature-guard.service';
 import { formatErrorResponse } from '../../shared/errors';
 import { auditLogger } from '../../shared/logger/audit-logger';
 import { securitySanitizer } from '../../shared/security/security-sanitizer';
+import { AckResponseFormatter, AckCallback } from '../../shared/responses/ack-response.formatter';
 import { JoinRoomPayload, LeaveRoomPayload, BroadcastRoomPayload } from './IRoom';
 
 export function registerRoomHandlers(socket: Socket): void {
   // Handle room:join
-  socket.on('room:join', async (rawPayload: JoinRoomPayload, ack?: (res: unknown) => void) => {
+  socket.on('room:join', async (rawPayload: JoinRoomPayload, ack?: AckCallback) => {
     const startTime = performance.now();
     const correlationId = auditLogger.generateCorrelationId();
 
@@ -20,15 +21,19 @@ export function registerRoomHandlers(socket: Socket): void {
       const payload = securitySanitizer.sanitize(rawPayload);
       const scopedRoomKey = await roomService.joinRoom(socket, payload);
 
-      const response = {
-        status: 'success',
+      const responseData = {
         event: 'room:joined',
         roomId: payload.roomId,
         scopedRoomKey,
       };
 
-      socket.emit('room:joined', response);
-      if (ack) ack(response);
+      const legacyResponse = {
+        status: 'success',
+        ...responseData,
+      };
+
+      socket.emit('room:joined', legacyResponse);
+      AckResponseFormatter.sendAck(ack, AckResponseFormatter.success(responseData));
 
       auditLogger.log({
         correlationId,
@@ -43,7 +48,10 @@ export function registerRoomHandlers(socket: Socket): void {
     } catch (error) {
       const errorResponse = formatErrorResponse(error);
       socket.emit('room:error', errorResponse);
-      if (ack) ack(errorResponse);
+      AckResponseFormatter.sendAck(
+        ack,
+        AckResponseFormatter.error(errorResponse.code, errorResponse.message)
+      );
 
       auditLogger.log({
         correlationId,
@@ -59,7 +67,7 @@ export function registerRoomHandlers(socket: Socket): void {
   });
 
   // Handle room:leave
-  socket.on('room:leave', async (rawPayload: LeaveRoomPayload, ack?: (res: unknown) => void) => {
+  socket.on('room:leave', async (rawPayload: LeaveRoomPayload, ack?: AckCallback) => {
     const startTime = performance.now();
     const correlationId = auditLogger.generateCorrelationId();
 
@@ -70,15 +78,19 @@ export function registerRoomHandlers(socket: Socket): void {
       const payload = securitySanitizer.sanitize(rawPayload);
       const scopedRoomKey = await roomService.leaveRoom(socket, payload);
 
-      const response = {
-        status: 'success',
+      const responseData = {
         event: 'room:left',
         roomId: payload.roomId,
         scopedRoomKey,
       };
 
-      socket.emit('room:left', response);
-      if (ack) ack(response);
+      const legacyResponse = {
+        status: 'success',
+        ...responseData,
+      };
+
+      socket.emit('room:left', legacyResponse);
+      AckResponseFormatter.sendAck(ack, AckResponseFormatter.success(responseData));
 
       auditLogger.log({
         correlationId,
@@ -93,7 +105,10 @@ export function registerRoomHandlers(socket: Socket): void {
     } catch (error) {
       const errorResponse = formatErrorResponse(error);
       socket.emit('room:error', errorResponse);
-      if (ack) ack(errorResponse);
+      AckResponseFormatter.sendAck(
+        ack,
+        AckResponseFormatter.error(errorResponse.code, errorResponse.message)
+      );
 
       auditLogger.log({
         correlationId,
@@ -109,7 +124,7 @@ export function registerRoomHandlers(socket: Socket): void {
   });
 
   // Handle room:broadcast
-  socket.on('room:broadcast', async (rawPayload: BroadcastRoomPayload, ack?: (res: unknown) => void) => {
+  socket.on('room:broadcast', async (rawPayload: BroadcastRoomPayload, ack?: AckCallback) => {
     const startTime = performance.now();
     const correlationId = auditLogger.generateCorrelationId();
 
@@ -120,14 +135,13 @@ export function registerRoomHandlers(socket: Socket): void {
       const payload = securitySanitizer.sanitize(rawPayload);
       const scopedRoomKey = roomService.broadcastToRoom(socket, payload);
 
-      const response = {
-        status: 'success',
+      const responseData = {
         event: 'room:broadcast_sent',
         roomId: payload.roomId,
         scopedRoomKey,
       };
 
-      if (ack) ack(response);
+      AckResponseFormatter.sendAck(ack, AckResponseFormatter.success(responseData));
 
       auditLogger.log({
         correlationId,
@@ -142,7 +156,10 @@ export function registerRoomHandlers(socket: Socket): void {
     } catch (error) {
       const errorResponse = formatErrorResponse(error);
       socket.emit('room:error', errorResponse);
-      if (ack) ack(errorResponse);
+      AckResponseFormatter.sendAck(
+        ack,
+        AckResponseFormatter.error(errorResponse.code, errorResponse.message)
+      );
 
       auditLogger.log({
         correlationId,

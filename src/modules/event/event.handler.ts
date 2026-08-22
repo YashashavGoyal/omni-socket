@@ -5,6 +5,7 @@ import { featureGuardService } from '../application/feature-guard.service';
 import { formatErrorResponse } from '../../shared/errors';
 import { auditLogger } from '../../shared/logger/audit-logger';
 import { securitySanitizer } from '../../shared/security/security-sanitizer';
+import { AckResponseFormatter, AckCallback } from '../../shared/responses/ack-response.formatter';
 import { EmitEventPayload } from './IEvent';
 
 export function registerEventHandlers(socket: Socket): void {
@@ -15,7 +16,7 @@ export function registerEventHandlers(socket: Socket): void {
   }
 
   // Handle generic custom event emitting
-  socket.on('event:emit', async (rawPayload: EmitEventPayload, ack?: (res: unknown) => void) => {
+  socket.on('event:emit', async (rawPayload: EmitEventPayload, ack?: AckCallback) => {
     const startTime = performance.now();
     const correlationId = auditLogger.generateCorrelationId();
 
@@ -26,15 +27,14 @@ export function registerEventHandlers(socket: Socket): void {
       const payload = securitySanitizer.sanitize(rawPayload);
       eventService.emitEvent(socket, payload);
 
-      const response = {
-        status: 'success',
+      const responseData = {
         event: 'event:emitted',
         targetType: payload.targetType,
         targetId: payload.targetId,
         eventName: payload.eventName,
       };
 
-      if (ack) ack(response);
+      AckResponseFormatter.sendAck(ack, AckResponseFormatter.success(responseData));
 
       auditLogger.log({
         correlationId,
@@ -49,7 +49,10 @@ export function registerEventHandlers(socket: Socket): void {
     } catch (error) {
       const errorResponse = formatErrorResponse(error);
       socket.emit('event:error', errorResponse);
-      if (ack) ack(errorResponse);
+      AckResponseFormatter.sendAck(
+        ack,
+        AckResponseFormatter.error(errorResponse.code, errorResponse.message)
+      );
 
       auditLogger.log({
         correlationId,

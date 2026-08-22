@@ -1,6 +1,6 @@
 {
   "name": "omni-socket",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Standalone, multi-tenant, application-agnostic realtime Socket.IO server infrastructure.",
   "main": "dist/index.js",
   "scripts": {
