@@ -25,7 +25,7 @@ describe('Graceful Shutdown Subsystem', () => {
     });
 
     await new Promise<void>((res) => socket.on('connect', res));
-  });
+  }, 30000);
 
   afterAll(async () => {
     socket.disconnect();

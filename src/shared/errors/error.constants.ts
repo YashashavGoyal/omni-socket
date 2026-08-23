@@ -42,5 +42,6 @@ export const ERROR_MESSAGES = {
   APPLICATION_NOT_FOUND: 'Application not found',
   RESOURCE_NOT_FOUND: 'The requested resource was not found',
   RATE_LIMIT_EXCEEDED: 'Rate limit exceeded. Please try again later',
+  DATABASE_NOT_CONNECTED: 'Database connection is not configured or available',
   INTERNAL_SERVER_ERROR: 'An unexpected internal server error occurred',
 } as const;

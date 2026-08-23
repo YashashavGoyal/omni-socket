@@ -1,5 +1,6 @@
 import { Socket } from 'socket.io';
 import { TooManyRequestsError } from '../errors';
+import { config } from '../../config/env';
 
 interface RateLimitWindow {
   count: number;
@@ -13,12 +14,12 @@ export class RateLimiterService {
    * Asserts rate limit for a given key (e.g. socket.id or applicationId).
    * @param key Unique key to rate limit
    * @param maxRequests Maximum allowed requests in window
-   * @param windowMs Window duration in milliseconds (default: 10,000ms = 10s)
+   * @param windowMs Window duration in milliseconds (default: config.RATE_LIMIT_SOCKET_WINDOW_MS)
    */
   public checkRateLimit(
     key: string,
-    maxRequests: number = 30,
-    windowMs: number = 10000
+    maxRequests: number = config.RATE_LIMIT_SOCKET_MAX,
+    windowMs: number = config.RATE_LIMIT_SOCKET_WINDOW_MS
   ): void {
     const now = Date.now();
     const windowData = this.windows.get(key);
@@ -47,17 +48,18 @@ export class RateLimiterService {
    */
   public assertDualTierRateLimit(
     socket: Socket,
-    socketMax: number = 30,
-    appMax: number = 1000,
-    windowMs: number = 10000
+    socketMax: number = config.RATE_LIMIT_SOCKET_MAX,
+    appMax: number = config.RATE_LIMIT_APP_MAX,
+    socketWindowMs: number = config.RATE_LIMIT_SOCKET_WINDOW_MS,
+    appWindowMs: number = config.RATE_LIMIT_APP_WINDOW_MS
   ): void {
     // 1. Per-Socket Connection Limit
-    this.checkRateLimit(`socket:${socket.id}`, socketMax, windowMs);
+    this.checkRateLimit(`socket:${socket.id}`, socketMax, socketWindowMs);
 
     // 2. Per-Tenant Application Bandwidth Limit
     const appId = socket.data.applicationId as string | undefined;
     if (appId) {
-      this.checkRateLimit(`app:${appId}`, appMax, windowMs);
+      this.checkRateLimit(`app:${appId}`, appMax, appWindowMs);
     }
   }
 
