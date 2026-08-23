@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { eq } from 'drizzle-orm';
 import { db } from '../../../db';
 import { applications } from '../../../db/schema';
@@ -37,7 +38,7 @@ export class DrizzleApplicationRepository implements IApplicationRepository {
     }
 
     const now = new Date();
-    const id = `app_${appData.applicationId}_${Date.now()}`;
+    const id = crypto.randomUUID();
 
     const newRecord = {
       id,
@@ -70,6 +71,65 @@ export class DrizzleApplicationRepository implements IApplicationRepository {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     }));
+  }
+
+  public async updateApp(
+    applicationId: string,
+    updates: Partial<Omit<ApplicationRecord, 'id' | 'applicationId' | 'createdAt' | 'updatedAt'>>
+  ): Promise<ApplicationRecord | null> {
+    if (!db) {
+      throw new InternalServerError(ERROR_MESSAGES.DATABASE_NOT_CONNECTED);
+    }
+
+    const existing = await this.findByApplicationId(applicationId);
+    if (!existing) return null;
+
+    const now = new Date();
+    const setPayload: Record<string, any> = {
+      updatedAt: now,
+    };
+
+    if (updates.name !== undefined) {
+      setPayload.name = updates.name;
+    }
+    if (updates.enabled !== undefined) {
+      setPayload.enabled = updates.enabled;
+    }
+    if (updates.features !== undefined) {
+      setPayload.features = { ...existing.features, ...updates.features };
+    }
+
+    await db
+      .update(applications)
+      .set(setPayload)
+      .where(eq(applications.applicationId, applicationId));
+
+    return this.findByApplicationId(applicationId);
+  }
+
+  public async rotateApiKey(applicationId: string, newApiKeyHash: string): Promise<boolean> {
+    if (!db) {
+      throw new InternalServerError(ERROR_MESSAGES.DATABASE_NOT_CONNECTED);
+    }
+
+    await db
+      .update(applications)
+      .set({
+        apiKeyHash: newApiKeyHash,
+        updatedAt: new Date(),
+      })
+      .where(eq(applications.applicationId, applicationId));
+
+    return true;
+  }
+
+  public async deleteApp(applicationId: string): Promise<boolean> {
+    if (!db) {
+      throw new InternalServerError(ERROR_MESSAGES.DATABASE_NOT_CONNECTED);
+    }
+
+    await db.delete(applications).where(eq(applications.applicationId, applicationId));
+    return true;
   }
 
   public getScopedRoomKey(applicationId: string, roomId: string): string {

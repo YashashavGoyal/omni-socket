@@ -31,6 +31,13 @@ export class CryptoService {
   public generateSecureToken(bytes: number = 32): string {
     return crypto.randomBytes(bytes).toString('hex');
   }
+
+  /**
+   * Generates a cryptographically secure API key with prefix.
+   */
+  public generateApiKey(prefix: string = 'omni_live'): string {
+    return `${prefix}_${this.generateSecureToken(16)}`;
+  }
 }
 
 export const cryptoService = new CryptoService();

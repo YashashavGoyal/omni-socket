@@ -4,6 +4,7 @@ import { setupSocketIO } from './socket';
 import { fastifyErrorHandler } from './shared/errors';
 import { registerHealthRoutes } from './modules/health';
 import { registerDocsRoutes } from './modules/docs/docs.controller';
+import { registerTenantRoutes } from './modules/application/tenant.controller';
 import { registerGracefulShutdown } from './shared/lifecycle';
 
 const server = Fastify({
@@ -26,9 +27,10 @@ const server = Fastify({
 // Attach central Fastify error handler middleware
 server.setErrorHandler(fastifyErrorHandler);
 
-// Register operational readiness health endpoints & self-documenting REST routes
+// Register operational readiness health, tenant REST management & docs routes
 registerHealthRoutes(server);
 registerDocsRoutes(server);
+registerTenantRoutes(server);
 
 // Attach Socket.IO transport layer
 const io = setupSocketIO(server);

@@ -1,4 +1,4 @@
-CREATE TABLE "applications" (
+CREATE TABLE IF NOT EXISTS "applications" (
 	"id" text PRIMARY KEY NOT NULL,
 	"application_id" varchar(255) NOT NULL,
 	"name" text NOT NULL,

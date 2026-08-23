@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import crypto from 'crypto';
 import { z } from 'zod';
 
 dotenv.config();
@@ -12,6 +13,19 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 
   CORS_ORIGIN: z.string().default('*'),
+
+  // Master Admin Authentication Key
+  ADMIN_API_KEY: z
+    .string()
+    .min(16, { message: 'ADMIN_API_KEY must be at least 16 characters long' })
+    .default(() => {
+      if (process.env.ADMIN_API_KEY) return process.env.ADMIN_API_KEY;
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('ADMIN_API_KEY environment variable is strictly required in production mode!');
+      }
+      // Auto-generate random secure dev token in development/test mode
+      return `omni_dev_${crypto.randomBytes(8).toString('hex')}`;
+    }),
 
   // Database Configuration
   DATABASE_URL: z.string().default(''),
@@ -35,3 +49,7 @@ if (!parsedEnv.success) {
 
 export const config = parsedEnv.data;
 export type AppConfig = z.infer<typeof envSchema>;
+
+if (config.NODE_ENV !== 'production' && !process.env.ADMIN_API_KEY) {
+  console.log(`🔑 [Security Notice] ADMIN_API_KEY not set in .env. Auto-generated session key: ${config.ADMIN_API_KEY}`);
+}
