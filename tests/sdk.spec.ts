@@ -1,12 +1,15 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Fastify, { FastifyInstance } from 'fastify';
 import { setupSocketIO } from '../src/socket';
-import { registerHealthRoutes } from '../src/modules/health';
+import { registerHealthRoutes } from '../src/api/health/health.routes';
 import { OmniSocketClient } from '../src/sdk/omni-client';
+import { applicationService } from '../src/services/application/application.service';
 
 describe('Lightweight Developer Client SDK (OmniSocketClient)', () => {
   let server: FastifyInstance;
   let port: number;
+  let appId: string;
+  let apiKey: string;
 
   beforeAll(async () => {
     server = Fastify({ logger: false });
@@ -16,6 +19,12 @@ describe('Lightweight Developer Client SDK (OmniSocketClient)', () => {
     await server.listen({ port: 0, host: '127.0.0.1' });
     const address = server.server.address();
     port = typeof address === 'object' && address ? address.port : 0;
+
+    const reg = await applicationService.registerApp({
+      name: 'SDK Test App',
+    });
+    appId = reg.record.applicationId;
+    apiKey = reg.apiKey;
   });
 
   afterAll(async () => {
@@ -25,16 +34,16 @@ describe('Lightweight Developer Client SDK (OmniSocketClient)', () => {
   it('should connect, join room, update presence, and broadcast using OmniSocketClient SDK', async () => {
     const clientA = new OmniSocketClient({
       url: `http://127.0.0.1:${port}`,
-      applicationId: 'ourtime',
-      apiKey: 'ourtime_secret_key_v1',
+      applicationId: appId,
+      apiKey: apiKey,
       userId: 'sdk_alice',
       autoHeartbeat: false,
     });
 
     const clientB = new OmniSocketClient({
       url: `http://127.0.0.1:${port}`,
-      applicationId: 'ourtime',
-      apiKey: 'ourtime_secret_key_v1',
+      applicationId: appId,
+      apiKey: apiKey,
       userId: 'sdk_bob',
       autoHeartbeat: false,
     });
@@ -85,16 +94,16 @@ describe('Lightweight Developer Client SDK (OmniSocketClient)', () => {
   it('should support custom event routing via emitCustomEvent, emitToUser, and emitToApp', async () => {
     const clientSender = new OmniSocketClient({
       url: `http://127.0.0.1:${port}`,
-      applicationId: 'ourtime',
-      apiKey: 'ourtime_secret_key_v1',
+      applicationId: appId,
+      apiKey: apiKey,
       userId: 'sender_user',
       autoHeartbeat: false,
     });
 
     const clientReceiver = new OmniSocketClient({
       url: `http://127.0.0.1:${port}`,
-      applicationId: 'ourtime',
-      apiKey: 'ourtime_secret_key_v1',
+      applicationId: appId,
+      apiKey: apiKey,
       userId: 'target_user',
       autoHeartbeat: false,
     });

@@ -1,11 +1,12 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { FastifyInstance } from 'fastify';
 import { config } from '../config/env';
-import { authenticateHandshake } from '../modules/auth/auth.middleware';
-import { registerRoomHandlers } from '../modules/room/room.handler';
-import { registerEventHandlers } from '../modules/event/event.handler';
-import { registerPresenceHandlers, presenceService } from '../modules/presence';
-import { connectionRegistry } from '../modules/connection/connection-registry';
+import { authenticateHandshake } from './middleware/auth.middleware';
+import { registerRoomHandlers } from './handlers/room/room.handler';
+import { registerEventHandlers } from './handlers/event/event.handler';
+import { registerPresenceHandlers } from './handlers/presence/presence.handler';
+import { presenceService } from './handlers/presence/presence.service';
+import { connectionRegistry } from './connection/connection-registry';
 
 export let io: SocketIOServer;
 

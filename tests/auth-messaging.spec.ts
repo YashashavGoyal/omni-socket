@@ -2,11 +2,14 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Fastify from 'fastify';
 import { io as ClientSocket, Socket as ClientSocketType } from 'socket.io-client';
 import { setupSocketIO } from '../src/socket';
+import { applicationService } from '../src/services/application/application.service';
 
 describe('Auth & Messaging Subsystem', () => {
   let server: ReturnType<typeof Fastify>;
   let aliceSocket: ClientSocketType;
   let bobSocket: ClientSocketType;
+  let appId: string;
+  let apiKey: string;
   const PORT = 4031;
 
   beforeAll(async () => {
@@ -14,13 +17,19 @@ describe('Auth & Messaging Subsystem', () => {
     setupSocketIO(server);
     await server.listen({ port: PORT, host: '127.0.0.1' });
 
+    const reg = await applicationService.registerApp({
+      name: 'Auth Test App',
+    });
+    appId = reg.record.applicationId;
+    apiKey = reg.apiKey;
+
     aliceSocket = ClientSocket(`http://127.0.0.1:${PORT}`, {
-      auth: { applicationId: 'ourtime', apiKey: 'ourtime_secret_key_v1', userId: 'alice' },
+      auth: { applicationId: appId, apiKey, userId: 'alice' },
       transports: ['websocket'],
     });
 
     bobSocket = ClientSocket(`http://127.0.0.1:${PORT}`, {
-      auth: { applicationId: 'ourtime', apiKey: 'ourtime_secret_key_v1', userId: 'bob' },
+      auth: { applicationId: appId, apiKey, userId: 'bob' },
       transports: ['websocket'],
     });
 
@@ -31,8 +40,8 @@ describe('Auth & Messaging Subsystem', () => {
   });
 
   afterAll(async () => {
-    aliceSocket.disconnect();
-    bobSocket.disconnect();
+    aliceSocket?.disconnect();
+    bobSocket?.disconnect();
     await server.close();
   });
 
@@ -58,7 +67,7 @@ describe('Auth & Messaging Subsystem', () => {
 
   it('should reject unauthenticated connections', async () => {
     const invalidSocket = ClientSocket(`http://127.0.0.1:${PORT}`, {
-      auth: { applicationId: 'ourtime', apiKey: 'WRONG_KEY', userId: 'charlie' },
+      auth: { applicationId: appId, apiKey: 'WRONG_KEY', userId: 'charlie' },
       transports: ['websocket'],
     });
 

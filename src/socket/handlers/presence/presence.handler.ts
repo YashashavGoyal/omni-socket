@@ -1,10 +1,10 @@
 import { Socket } from 'socket.io';
 import { presenceService } from './presence.service';
-import { featureGuardService } from '../application/feature-guard.service';
-import { rateLimiterService } from '../../shared/rate-limiter/rate-limiter.service';
-import { formatErrorResponse } from '../../shared/errors';
-import { securitySanitizer } from '../../shared/security/security-sanitizer';
-import { AckResponseFormatter, AckCallback } from '../../shared/responses/ack-response.formatter';
+import { featureGuardService } from '../../../services/feature-guard/feature-guard.service';
+import { rateLimiterService } from '../../../shared/rate-limiter/rate-limiter.service';
+import { formatErrorResponse } from '../../../shared/errors';
+import { securitySanitizer } from '../../../shared/security/security-sanitizer';
+import { AckResponseFormatter, AckCallback } from '../../../shared/responses/ack-response.formatter';
 import { PresenceUpdatePayload } from './IPresence';
 
 export function registerPresenceHandlers(socket: Socket): void {

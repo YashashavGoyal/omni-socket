@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { config } from '../../config/env';
-import { UnauthorizedError } from '../../shared/errors';
+import { UnauthorizedError } from '../errors';
 
 export async function adminAuthMiddleware(
   request: FastifyRequest,

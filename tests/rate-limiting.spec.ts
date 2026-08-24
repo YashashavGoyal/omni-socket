@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Fastify from 'fastify';
 import { io as ClientSocket, Socket as ClientSocketType } from 'socket.io-client';
 import { setupSocketIO } from '../src/socket';
+import { applicationService } from '../src/services/application/application.service';
 
 describe('Dual-Tier Rate Limiting Subsystem', () => {
   let server: ReturnType<typeof Fastify>;
@@ -13,8 +14,12 @@ describe('Dual-Tier Rate Limiting Subsystem', () => {
     setupSocketIO(server);
     await server.listen({ port: PORT, host: '127.0.0.1' });
 
+    const reg = await applicationService.registerApp({
+      name: 'Rate Limit Test App',
+    });
+
     socket = ClientSocket(`http://127.0.0.1:${PORT}`, {
-      auth: { applicationId: 'ourtime', apiKey: 'ourtime_secret_key_v1', userId: 'spammer' },
+      auth: { applicationId: reg.record.applicationId, apiKey: reg.apiKey, userId: 'spammer' },
       transports: ['websocket'],
     });
 
@@ -22,7 +27,7 @@ describe('Dual-Tier Rate Limiting Subsystem', () => {
   });
 
   afterAll(async () => {
-    socket.disconnect();
+    socket?.disconnect();
     await server.close();
   });
 

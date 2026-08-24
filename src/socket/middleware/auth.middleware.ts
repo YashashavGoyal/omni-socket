@@ -1,9 +1,9 @@
 import { Socket } from 'socket.io';
-import { applicationService } from '../application/application.service';
+import { applicationService } from '../../services/application/application.service';
 import { connectionRegistry } from '../connection/connection-registry';
 import { UnauthorizedError, ERROR_MESSAGES } from '../../shared/errors';
 import { auditLogger } from '../../shared/logger/audit-logger';
-import { AuthHandshakePayload } from './IAuth';
+import { AuthHandshakePayload } from '../../services/auth/IAuth';
 
 export async function authenticateHandshake(
   socket: Socket,

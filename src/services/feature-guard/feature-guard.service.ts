@@ -1,5 +1,5 @@
 import { Socket } from 'socket.io';
-import { applicationService } from './application.service';
+import { applicationService } from '../application/application.service';
 import { ForbiddenError } from '../../shared/errors';
 
 export class FeatureGuardService {

@@ -1,5 +1,5 @@
 import { pgTable, text, varchar, boolean, jsonb, timestamp } from 'drizzle-orm/pg-core';
-import { ApplicationFeatures } from '../modules/application/IApplication';
+import { ApplicationFeatures } from '../services/application/IApplication';
 
 export const applications = pgTable('applications', {
   id: text('id').primaryKey(),

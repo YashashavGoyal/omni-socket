@@ -1,8 +1,8 @@
 import { Socket } from 'socket.io';
-import { connectionRegistry } from '../connection/connection-registry';
-import { authorizationService } from '../auth/authorization.service';
+import { connectionRegistry } from '../../connection/connection-registry';
+import { authorizationService } from '../../../services/auth/authorization.service';
 import { PresenceRecord, PresenceUpdatePayload, UserPresenceStatus } from './IPresence';
-import { ValidationError } from '../../shared/errors';
+import { ValidationError } from '../../../shared/errors';
 
 export class PresenceService {
   private presenceMap = new Map<string, PresenceRecord>();

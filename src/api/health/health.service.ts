@@ -1,5 +1,5 @@
-import { connectionRegistry } from '../connection/connection-registry';
-import { applicationService } from '../application/application.service';
+import { connectionRegistry } from '../../socket/connection/connection-registry';
+import { applicationService } from '../../services/application/application.service';
 import { io } from '../../socket';
 
 export class HealthService {

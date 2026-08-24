@@ -2,9 +2,9 @@ import Fastify from 'fastify';
 import { config } from './config/env';
 import { setupSocketIO } from './socket';
 import { fastifyErrorHandler } from './shared/errors';
-import { registerHealthRoutes } from './modules/health';
-import { registerDocsRoutes } from './modules/docs/docs.controller';
-import { registerTenantRoutes } from './modules/application/tenant.controller';
+import { registerHealthRoutes } from './api/health/health.routes';
+import { registerDocsRoutes } from './api/docs/docs.controller';
+import { registerTenantRoutes } from './api/apps/tenant.controller';
 import { registerGracefulShutdown } from './shared/lifecycle';
 
 const server = Fastify({

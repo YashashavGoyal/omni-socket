@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Fastify from 'fastify';
 import { setupSocketIO } from '../src/socket';
-import { registerHealthRoutes } from '../src/modules/health';
+import { registerHealthRoutes } from '../src/api/health/health.routes';
 
 describe('Operational Readiness & Health Subsystem', () => {
   let server: ReturnType<typeof Fastify>;

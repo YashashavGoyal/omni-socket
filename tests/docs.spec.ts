@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Fastify, { FastifyInstance } from 'fastify';
-import { registerDocsRoutes } from '../src/modules/docs/docs.controller';
-import { docsService } from '../src/modules/docs/docs.service';
+import { registerDocsRoutes } from '../src/api/docs/docs.controller';
+import { docsService } from '../src/api/docs/docs.service';
 
 describe('Self-Documenting REST & AI Agent Markdown Subsystem', () => {
   let server: FastifyInstance;

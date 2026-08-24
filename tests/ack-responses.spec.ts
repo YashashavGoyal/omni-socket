@@ -2,12 +2,15 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Fastify, { FastifyInstance } from 'fastify';
 import { io as ClientSocket, Socket as ClientSocketType } from 'socket.io-client';
 import { setupSocketIO } from '../src/socket';
-import { registerHealthRoutes } from '../src/modules/health';
+import { registerHealthRoutes } from '../src/api/health/health.routes';
 import { AckEnvelope } from '../src/shared/responses/ack-response.formatter';
+import { applicationService } from '../src/services/application/application.service';
 
 describe('Structured Event ACK & Standardized Response Wrapping Subsystem', () => {
   let server: FastifyInstance;
   let port: number;
+  let appId: string;
+  let apiKey: string;
 
   beforeAll(async () => {
     server = Fastify({ logger: false });
@@ -17,6 +20,12 @@ describe('Structured Event ACK & Standardized Response Wrapping Subsystem', () =
     await server.listen({ port: 0, host: '127.0.0.1' });
     const address = server.server.address();
     port = typeof address === 'object' && address ? address.port : 0;
+
+    const reg = await applicationService.registerApp({
+      name: 'Ack Test App',
+    });
+    appId = reg.record.applicationId;
+    apiKey = reg.apiKey;
   });
 
   afterAll(async () => {
@@ -27,8 +36,8 @@ describe('Structured Event ACK & Standardized Response Wrapping Subsystem', () =
     return ClientSocket(`http://127.0.0.1:${port}`, {
       transports: ['websocket'],
       auth: {
-        applicationId: 'ourtime',
-        apiKey: 'ourtime_secret_key_v1',
+        applicationId: appId,
+        apiKey: apiKey,
         userId,
       },
     });
@@ -49,7 +58,7 @@ describe('Structured Event ACK & Standardized Response Wrapping Subsystem', () =
               expect(ackResponse.data).toEqual({
                 event: 'room:joined',
                 roomId: 'ack-test-room',
-                scopedRoomKey: 'ourtime:ack-test-room',
+                scopedRoomKey: `${appId}:ack-test-room`,
               });
               client.disconnect();
               resolve();

@@ -1,7 +1,7 @@
 import { Socket } from 'socket.io';
-import { authorizationService } from '../auth/authorization.service';
-import { connectionRegistry } from '../connection/connection-registry';
-import { ValidationError } from '../../shared/errors';
+import { authorizationService } from '../../../services/auth/authorization.service';
+import { connectionRegistry } from '../../connection/connection-registry';
+import { ValidationError } from '../../../shared/errors';
 import { EmitEventPayload, RoutedEventMessage } from './IEvent';
 
 export class EventService {
