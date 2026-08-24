@@ -3,11 +3,12 @@ import { cryptoService } from '../../../shared/crypto/crypto.service';
 import { ApplicationRecord, IApplicationRepository } from '../IApplication';
 
 export class InMemoryApplicationRepository implements IApplicationRepository {
-  private apps = new Map<string, ApplicationRecord>();
+  private appsById = new Map<string, ApplicationRecord>();
+  private appsBySlug = new Map<string, ApplicationRecord>();
 
   constructor() {
     const now = new Date();
-    this.apps.set('ourtime', {
+    const ourtimeRecord: ApplicationRecord = {
       id: 'app_ourtime_001',
       applicationId: 'ourtime',
       name: 'ourTime Video Platform',
@@ -20,9 +21,11 @@ export class InMemoryApplicationRepository implements IApplicationRepository {
       },
       createdAt: now,
       updatedAt: now,
-    });
+    };
+    this.appsById.set(ourtimeRecord.id, ourtimeRecord);
+    this.appsBySlug.set(ourtimeRecord.applicationId, ourtimeRecord);
 
-    this.apps.set('demo-chat', {
+    const demoChatRecord: ApplicationRecord = {
       id: 'app_demochat_002',
       applicationId: 'demo-chat',
       name: 'Demo Chat Application',
@@ -35,12 +38,17 @@ export class InMemoryApplicationRepository implements IApplicationRepository {
       },
       createdAt: now,
       updatedAt: now,
-    });
+    };
+    this.appsById.set(demoChatRecord.id, demoChatRecord);
+    this.appsBySlug.set(demoChatRecord.applicationId, demoChatRecord);
+  }
+
+  public async findById(id: string): Promise<ApplicationRecord | null> {
+    return this.appsById.get(id) || null;
   }
 
   public async findByApplicationId(applicationId: string): Promise<ApplicationRecord | null> {
-    const app = this.apps.get(applicationId);
-    return app || null;
+    return this.appsBySlug.get(applicationId) || null;
   }
 
   public async createApp(
@@ -53,20 +61,25 @@ export class InMemoryApplicationRepository implements IApplicationRepository {
       createdAt: now,
       updatedAt: now,
     };
-    this.apps.set(record.applicationId, record);
+    this.appsById.set(record.id, record);
+    this.appsBySlug.set(record.applicationId, record);
     return record;
   }
 
   public async listApps(): Promise<ApplicationRecord[]> {
-    return Array.from(this.apps.values());
+    return Array.from(this.appsById.values());
   }
 
   public async updateApp(
-    applicationId: string,
-    updates: Partial<Omit<ApplicationRecord, 'id' | 'applicationId' | 'createdAt' | 'updatedAt'>>
+    id: string,
+    updates: Partial<Omit<ApplicationRecord, 'id' | 'createdAt' | 'updatedAt'>>
   ): Promise<ApplicationRecord | null> {
-    const existing = this.apps.get(applicationId);
+    const existing = this.appsById.get(id);
     if (!existing) return null;
+
+    if (updates.applicationId && updates.applicationId !== existing.applicationId) {
+      this.appsBySlug.delete(existing.applicationId);
+    }
 
     const updated: ApplicationRecord = {
       ...existing,
@@ -77,22 +90,28 @@ export class InMemoryApplicationRepository implements IApplicationRepository {
       updatedAt: new Date(),
     };
 
-    this.apps.set(applicationId, updated);
+    this.appsById.set(id, updated);
+    this.appsBySlug.set(updated.applicationId, updated);
     return updated;
   }
 
-  public async rotateApiKey(applicationId: string, newApiKeyHash: string): Promise<boolean> {
-    const existing = this.apps.get(applicationId);
+  public async rotateApiKey(id: string, newApiKeyHash: string): Promise<boolean> {
+    const existing = this.appsById.get(id);
     if (!existing) return false;
 
     existing.apiKeyHash = newApiKeyHash;
     existing.updatedAt = new Date();
-    this.apps.set(applicationId, existing);
+    this.appsById.set(id, existing);
+    this.appsBySlug.set(existing.applicationId, existing);
     return true;
   }
 
-  public async deleteApp(applicationId: string): Promise<boolean> {
-    return this.apps.delete(applicationId);
+  public async deleteApp(id: string): Promise<boolean> {
+    const existing = this.appsById.get(id);
+    if (!existing) return false;
+
+    this.appsBySlug.delete(existing.applicationId);
+    return this.appsById.delete(id);
   }
 
   public getScopedRoomKey(applicationId: string, roomId: string): string {

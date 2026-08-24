@@ -6,7 +6,7 @@ export interface ApplicationFeatures {
 }
 
 export interface ApplicationRecord {
-  id: string;            // Relational/Document Primary Identifier
+  id: string;            // Primary UUID Identifier
   applicationId: string; // Unique tenant slug (e.g. 'ourtime')
   name: string;          // Human-readable application display name
   apiKeyHash: string;    // Hashed secret key for authentication
@@ -17,14 +17,15 @@ export interface ApplicationRecord {
 }
 
 export interface IApplicationRepository {
+  findById(id: string): Promise<ApplicationRecord | null>;
   findByApplicationId(applicationId: string): Promise<ApplicationRecord | null>;
   createApp(app: Omit<ApplicationRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApplicationRecord>;
   listApps(): Promise<ApplicationRecord[]>;
   updateApp(
-    applicationId: string,
-    updates: Partial<Omit<ApplicationRecord, 'id' | 'applicationId' | 'createdAt' | 'updatedAt'>>
+    id: string,
+    updates: Partial<Omit<ApplicationRecord, 'id' | 'createdAt' | 'updatedAt'>>
   ): Promise<ApplicationRecord | null>;
-  rotateApiKey(applicationId: string, newApiKeyHash: string): Promise<boolean>;
-  deleteApp(applicationId: string): Promise<boolean>;
+  rotateApiKey(id: string, newApiKeyHash: string): Promise<boolean>;
+  deleteApp(id: string): Promise<boolean>;
   getScopedRoomKey(applicationId: string, roomId: string): string;
 }

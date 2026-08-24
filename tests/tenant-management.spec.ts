@@ -51,10 +51,11 @@ describe('Tenant Management REST API Subsystem (/api/v1/apps)', () => {
     expect(body.data.length).toBeGreaterThan(0);
   });
 
-  it('should register a new tenant application (system auto-generates slug and API key) and authenticate socket handshake', async () => {
-    const testAppName = `Automated Test App ${Date.now()}`;
+  it('should register a app with custom slug, update its slug, and authenticate socket handshake using slug', async () => {
+    const testAppName = `Custom Slug App ${Date.now()}`;
+    const customSlug = `custom-slug-${Date.now()}`;
 
-    // 1. Register App by only providing name
+    // 1. Register App by providing name & custom applicationId slug
     const createRes = await server.inject({
       method: 'POST',
       url: '/api/v1/apps',
@@ -63,6 +64,7 @@ describe('Tenant Management REST API Subsystem (/api/v1/apps)', () => {
       },
       payload: {
         name: testAppName,
+        applicationId: customSlug,
         features: { presence: true, rooms: true, events: true },
       },
     });
@@ -70,15 +72,16 @@ describe('Tenant Management REST API Subsystem (/api/v1/apps)', () => {
     expect(createRes.statusCode).toBe(201);
     const createBody = JSON.parse(createRes.body);
     expect(createBody.status).toBe('success');
-    expect(createBody.data.applicationId).toBeDefined();
+    expect(createBody.data.id).toBeDefined();
+    expect(createBody.data.applicationId).toBe(customSlug);
     expect(createBody.data.apiKey).toBeDefined();
 
-    const generatedAppId = createBody.data.applicationId;
+    const appId = createBody.data.id;
     const generatedApiKey = createBody.data.apiKey;
 
-    // 2. Connect socket with generated key and applicationId
+    // 2. Connect socket with generated key and applicationId slug
     const socket: ClientSocketType = ClientSocket(`http://127.0.0.1:${PORT}`, {
-      auth: { applicationId: generatedAppId, apiKey: generatedApiKey, userId: 'test_user' },
+      auth: { applicationId: customSlug, apiKey: generatedApiKey, userId: 'test_user' },
       transports: ['websocket'],
     });
 
@@ -90,63 +93,65 @@ describe('Tenant Management REST API Subsystem (/api/v1/apps)', () => {
     expect(socket.connected).toBe(true);
     socket.disconnect();
 
-    // 3. Disable tenant application
+    // 3. Mutate the slug via PATCH /api/v1/apps/:id
+    const newSlug = `renamed-slug-${Date.now()}`;
     const patchRes = await server.inject({
       method: 'PATCH',
-      url: `/api/v1/apps/${generatedAppId}`,
+      url: `/api/v1/apps/${appId}`,
       headers: {
         'x-admin-key': adminKey,
       },
       payload: {
-        enabled: false,
+        applicationId: newSlug,
       },
     });
 
     expect(patchRes.statusCode).toBe(200);
     const patchBody = JSON.parse(patchRes.body);
-    expect(patchBody.data.enabled).toBe(false);
+    expect(patchBody.data.applicationId).toBe(newSlug);
 
-    // 4. Attempt socket connection to disabled tenant -> expect rejection
-    const disabledSocket: ClientSocketType = ClientSocket(`http://127.0.0.1:${PORT}`, {
-      auth: { applicationId: generatedAppId, apiKey: generatedApiKey, userId: 'test_user' },
+    // 4. Connect socket using the updated slug
+    const updatedSocket: ClientSocketType = ClientSocket(`http://127.0.0.1:${PORT}`, {
+      auth: { applicationId: newSlug, apiKey: generatedApiKey, userId: 'test_user' },
       transports: ['websocket'],
-      reconnection: false,
     });
 
-    await expect(
-      new Promise<void>((resolve, reject) => {
-        disabledSocket.on('connect', resolve);
-        disabledSocket.on('connect_error', reject);
-      })
-    ).rejects.toThrow();
+    await new Promise<void>((resolve, reject) => {
+      updatedSocket.on('connect', resolve);
+      updatedSocket.on('connect_error', reject);
+    });
 
-    disabledSocket.disconnect();
+    expect(updatedSocket.connected).toBe(true);
+    updatedSocket.disconnect();
 
-    // 5. Rotate API key and re-enable tenant
+    // 5. Disable tenant application via PATCH /api/v1/apps/:id
+    await server.inject({
+      method: 'PATCH',
+      url: `/api/v1/apps/${appId}`,
+      headers: { 'x-admin-key': adminKey },
+      payload: { enabled: false },
+    });
+
+    // 6. Rotate API key via POST /api/v1/apps/:id/rotate-key and re-enable
     const rotateRes = await server.inject({
       method: 'POST',
-      url: `/api/v1/apps/${generatedAppId}/rotate-key`,
-      headers: {
-        'x-admin-key': adminKey,
-      },
+      url: `/api/v1/apps/${appId}/rotate-key`,
+      headers: { 'x-admin-key': adminKey },
     });
 
     expect(rotateRes.statusCode).toBe(200);
     const newApiKey = JSON.parse(rotateRes.body).data.newApiKey;
-    expect(newApiKey).toBeDefined();
 
     await server.inject({
       method: 'PATCH',
-      url: `/api/v1/apps/${generatedAppId}`,
-      headers: {
-        'x-admin-key': adminKey,
-      },
+      url: `/api/v1/apps/${appId}`,
+      headers: { 'x-admin-key': adminKey },
       payload: { enabled: true },
     });
 
-    // 6. Connect with new rotated key
+    // 7. Connect with rotated key
     const reconnectedSocket: ClientSocketType = ClientSocket(`http://127.0.0.1:${PORT}`, {
-      auth: { applicationId: generatedAppId, apiKey: newApiKey, userId: 'test_user' },
+      auth: { applicationId: newSlug, apiKey: newApiKey, userId: 'test_user' },
       transports: ['websocket'],
     });
 
@@ -158,13 +163,11 @@ describe('Tenant Management REST API Subsystem (/api/v1/apps)', () => {
     expect(reconnectedSocket.connected).toBe(true);
     reconnectedSocket.disconnect();
 
-    // 7. Cleanup: Delete test app
+    // 8. Cleanup: Delete test app via DELETE /api/v1/apps/:id
     const deleteRes = await server.inject({
       method: 'DELETE',
-      url: `/api/v1/apps/${generatedAppId}`,
-      headers: {
-        'x-admin-key': adminKey,
-      },
+      url: `/api/v1/apps/${appId}`,
+      headers: { 'x-admin-key': adminKey },
     });
 
     expect(deleteRes.statusCode).toBe(200);

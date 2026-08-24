@@ -2,22 +2,40 @@ import crypto from 'crypto';
 import { cryptoService } from '../../shared/crypto/crypto.service';
 import { ApplicationFeatures, ApplicationRecord } from './IApplication';
 import { applicationRepository } from './application.repository';
-import { NotFoundError } from '../../shared/errors';
+import { NotFoundError, ConflictError } from '../../shared/errors';
+
+export type SanitizedApplicationRecord = Omit<ApplicationRecord, 'apiKeyHash'>;
 
 export interface CreateAppInput {
   name: string;
+  applicationId?: string;
+  enabled?: boolean;
+  features?: ApplicationFeatures;
+}
+
+export interface UpdateAppInput {
+  name?: string;
+  applicationId?: string;
   enabled?: boolean;
   features?: ApplicationFeatures;
 }
 
 export interface CreatedAppResult {
-  record: ApplicationRecord;
+  record: SanitizedApplicationRecord;
   apiKey: string;
 }
 
 export class ApplicationService {
   /**
-   * Validates client credentials during Socket.IO handshake authentication.
+   * Helper method to strip sensitive credentials (apiKeyHash) from an application record.
+   */
+  private sanitize(app: ApplicationRecord): SanitizedApplicationRecord {
+    const { apiKeyHash, ...sanitized } = app;
+    return sanitized;
+  }
+
+  /**
+   * Validates client credentials during Socket.IO handshake authentication (uses applicationId slug).
    */
   public async validateAppCredentials(applicationId: string, rawApiKey: string): Promise<boolean> {
     const app = await applicationRepository.findByApplicationId(applicationId);
@@ -28,19 +46,69 @@ export class ApplicationService {
     return cryptoService.verifyHash(rawApiKey, app.apiKeyHash);
   }
 
-  public async getApp(applicationId: string): Promise<ApplicationRecord> {
+  /**
+   * Retrieves an application by its primary UUID id.
+   */
+  public async getApp(id: string): Promise<SanitizedApplicationRecord> {
+    const app = await applicationRepository.findById(id);
+    if (!app) {
+      throw new NotFoundError(`Application with ID '${id}' not found`);
+    }
+    return this.sanitize(app);
+  }
+
+  /**
+   * Retrieves an application by its public applicationId slug.
+   */
+  public async getAppBySlug(applicationId: string): Promise<SanitizedApplicationRecord> {
     const app = await applicationRepository.findByApplicationId(applicationId);
     if (!app) {
-      throw new NotFoundError(`Application '${applicationId}' not found`);
+      throw new NotFoundError(`Application with slug '${applicationId}' not found`);
+    }
+    return this.sanitize(app);
+  }
+
+  /**
+   * Internal helper to fetch raw ApplicationRecord (including apiKeyHash).
+   */
+  private async getRawApp(id: string): Promise<ApplicationRecord> {
+    const app = await applicationRepository.findById(id);
+    if (!app) {
+      throw new NotFoundError(`Application with ID '${id}' not found`);
     }
     return app;
   }
 
   /**
-   * Registers a new tenant application. Auto-generates a clean app_... identifier and apiKey.
+   * Registers a new tenant application.
+   * - Uses user-provided applicationId slug if available (validating uniqueness).
+   * - Or auto-generates a human-friendly slug / app_... identifier if omitted.
    */
   public async registerApp(input: CreateAppInput): Promise<CreatedAppResult> {
-    const applicationId = `app_${crypto.randomBytes(6).toString('hex')}`;
+    let applicationId: string;
+
+    if (input.applicationId) {
+      const existing = await applicationRepository.findByApplicationId(input.applicationId);
+      if (existing) {
+        throw new ConflictError(`Application slug '${input.applicationId}' already exists`);
+      }
+      applicationId = input.applicationId;
+    } else {
+      const baseSlug =
+        input.name
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '') || 'app';
+
+      let existing = await applicationRepository.findByApplicationId(baseSlug);
+      if (existing) {
+        applicationId = `${baseSlug}-${crypto.randomBytes(3).toString('hex')}`;
+      } else {
+        applicationId = baseSlug;
+      }
+    }
+
     const rawApiKey = cryptoService.generateApiKey();
     const apiKeyHash = cryptoService.hash(rawApiKey);
 
@@ -52,41 +120,45 @@ export class ApplicationService {
       features: input.features || { presence: true, rooms: true, events: true },
     });
 
-    return { record, apiKey: rawApiKey };
+    return { record: this.sanitize(record), apiKey: rawApiKey };
   }
 
-  public async listApps(): Promise<ApplicationRecord[]> {
-    return applicationRepository.listApps();
+  public async listApps(): Promise<SanitizedApplicationRecord[]> {
+    const apps = await applicationRepository.listApps();
+    return apps.map((app) => this.sanitize(app));
   }
 
-  public async updateApp(
-    applicationId: string,
-    updates: { name?: string; enabled?: boolean; features?: ApplicationFeatures }
-  ): Promise<ApplicationRecord> {
-    await this.getApp(applicationId);
+  /**
+   * Updates an application by its primary UUID id. Supports changing the applicationId slug.
+   */
+  public async updateApp(id: string, updates: UpdateAppInput): Promise<SanitizedApplicationRecord> {
+    const existing = await this.getRawApp(id);
 
-    const updated = await applicationRepository.updateApp(applicationId, updates);
-    if (!updated) {
-      throw new NotFoundError(`Application '${applicationId}' not found`);
+    if (updates.applicationId && updates.applicationId !== existing.applicationId) {
+      const taken = await applicationRepository.findByApplicationId(updates.applicationId);
+      if (taken) {
+        throw new ConflictError(`Application slug '${updates.applicationId}' is already taken`);
+      }
     }
 
-    return updated;
+    const updated = await applicationRepository.updateApp(id, updates);
+    return this.sanitize(updated!);
   }
 
-  public async rotateApiKey(applicationId: string): Promise<{ applicationId: string; newApiKey: string }> {
-    await this.getApp(applicationId);
+  public async rotateApiKey(id: string): Promise<{ id: string; applicationId: string; newApiKey: string }> {
+    const app = await this.getRawApp(id);
 
     const newApiKey = cryptoService.generateApiKey();
     const newApiKeyHash = cryptoService.hash(newApiKey);
 
-    await applicationRepository.rotateApiKey(applicationId, newApiKeyHash);
+    await applicationRepository.rotateApiKey(id, newApiKeyHash);
 
-    return { applicationId, newApiKey };
+    return { id, applicationId: app.applicationId, newApiKey };
   }
 
-  public async deleteApp(applicationId: string): Promise<boolean> {
-    await this.getApp(applicationId);
-    return applicationRepository.deleteApp(applicationId);
+  public async deleteApp(id: string): Promise<boolean> {
+    await this.getRawApp(id);
+    return applicationRepository.deleteApp(id);
   }
 
   public getScopedRoomKey(applicationId: string, roomId: string): string {

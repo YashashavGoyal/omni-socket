@@ -13,7 +13,7 @@ export class FeatureGuardService {
       throw new ForbiddenError('Unauthenticated socket request');
     }
 
-    const app = await applicationService.getApp(applicationId);
+    const app = await applicationService.getAppBySlug(applicationId);
     if (!app || !app.enabled) {
       throw new ForbiddenError(`Application '${applicationId}' is disabled or not found`);
     }
