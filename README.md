@@ -1,14 +1,17 @@
-# 🚀 OmniSocket Realtime Engine
+# 🚀 OmniSocket Realtime Engine (v1.3.0)
 
-OmniSocket is a **production-ready, application-agnostic, multi-tenant WebSocket infrastructure engine** built on top of Node.js, Fastify, Socket.IO, and TypeScript.
+OmniSocket is a **production-ready, application-agnostic, multi-tenant WebSocket infrastructure engine** built on top of Node.js, Fastify, Socket.IO, PostgreSQL (Drizzle ORM), and TypeScript.
 
-It serves as a standalone real-time messaging gateway for multiple client applications (e.g. video conferencing tools, chat applications, live whiteboards) with enterprise-grade security, rate limiting, presence tracking, and observability.
+It serves as a standalone real-time messaging gateway for multiple client applications (e.g. video conferencing tools, chat applications, live whiteboards) with enterprise-grade security, rate limiting, presence tracking, observability, and a built-in Master Admin Management Dashboard.
 
 ---
 
 ## 🌟 Key Features
 
 * **Multi-Tenant Isolation**: Tenant applications (`applicationId`) share a single engine with complete event and room-level state isolation.
+* **Glassmorphic Master Admin Dashboard**: Dedicated administrative GUI (`ADMIN_PANEL_PATH`) for tenant CRUD (Register, Edit, Rotate Key, Delete), real-time socket metrics, heap memory tracking, and health status.
+* **Obfuscated Admin Path**: Protect administrative interfaces from scanners by setting a custom `ADMIN_PANEL_PATH` in `.env`.
+* **Developer Client SDK**: Dedicated promise-based TypeScript SDK (`OmniSocketClient`) for seamless client integration.
 * **AI-Native Self-Documentation**: `/llms.txt` and `/docs` REST endpoints with content negotiation (`Accept: text/markdown`) for AI bots & developers.
 * **Dual-Tier Rate Limiting**: Socket-level (30 requests/10s) and Application-level (1000 requests/10s) sliding-window rate limit protection.
 * **Granular Feature Guarding**: Enable or disable features (`rooms`, `presence`, `events`) per tenant application on the fly.
@@ -17,6 +20,21 @@ It serves as a standalone real-time messaging gateway for multiple client applic
 * **Structured Audit Observability**: JSON log format with correlation IDs, action timing, and request tracing.
 * **Graceful Teardown**: Intercepts `SIGTERM` / `SIGINT`, notifies connected clients (`server:shutdown`), flushes packets, and closes cleanly.
 * **Production Containerization**: Multi-stage Dockerfile (`node:20-alpine`) with unprivileged `node` user and native Node HTTP health check probes.
+
+---
+
+## 💻 Master Admin Dashboard
+
+OmniSocket includes a responsive, glassmorphic Master Admin Panel.
+
+- **Configurable Obscure Route**: Configured via `ADMIN_PANEL_PATH`.
+- **Authentication**: Secured via `ADMIN_API_KEY` header/session token.
+- **Tenant Management**:
+  - **Register**: Provision new tenant apps with name, custom slug, and feature toggles.
+  - **Edit Modal**: Update application name, slug, active status, and feature flags dynamically.
+  - **Rotate Key**: Instantly rotate tenant API keys while invalidating old keys.
+  - **Delete**: Soft/hard purge registered tenant applications.
+- **System Metrics**: Realtime socket count, room count, server uptime, heap memory usage, and subsystem health checks.
 
 ---
 
@@ -66,8 +84,8 @@ OmniSocket features built-in content-negotiated documentation endpoints so LLMs,
              |                                     |
              v                                     v
   +--------------------+                 +--------------------+
-  | Connection & User  |                 | Presence &         |
-  | Registry (State)   |                 | Heartbeat Engine   |
+  | Connection & User  |                 | Master Admin UI &  |
+  | Registry (State)   |                 | Presence Engine    |
   +--------------------+                 +--------------------+
 ```
 
@@ -94,6 +112,9 @@ HOST=0.0.0.0
 NODE_ENV=development
 LOG_LEVEL=info
 CORS_ORIGIN=*
+ADMIN_API_KEY=omni_dev_super_secret_key_12345
+ADMIN_PANEL_PATH=/admin-route
+DATABASE_URL=postgresql://user:password@localhost:5432/omni_socket
 ```
 
 ### 3. Development Server
@@ -140,4 +161,4 @@ docker run -d -p 4000:4000 --name omni-socket omni-socket:latest
 
 ## 📖 API & Event Specifications
 
-For full WebSocket event payload contracts and REST health probe details, see [docs/api-spec.md](docs/api-spec.md).
+For full WebSocket event payload contracts, client SDK usage, and REST health probe details, see [docs/api-spec.md](docs/api-spec.md) and [ROADMAP.md](ROADMAP.md).
