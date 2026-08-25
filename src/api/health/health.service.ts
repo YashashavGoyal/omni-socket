@@ -6,7 +6,7 @@ export class HealthService {
   public getLiveness() {
     return {
       status: 'ok',
-      version: 'OmniSocket v1.1.0',
+      version: 'OmniSocket v1.3.0',
       timestamp: new Date().toISOString(),
       uptimeSeconds: Number(process.uptime().toFixed(2)),
     };
@@ -21,7 +21,7 @@ export class HealthService {
 
     return {
       status: isFullyReady ? 'ready' : 'not_ready',
-      version: 'OmniSocket v1.1.0',
+      version: 'OmniSocket v1.3.0',
       timestamp: new Date().toISOString(),
       subsystems: {
         socketIO: isSocketReady ? 'healthy' : 'unhealthy',

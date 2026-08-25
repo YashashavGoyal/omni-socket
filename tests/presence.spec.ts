@@ -8,6 +8,7 @@ describe('Presence & Heartbeat Subsystem', () => {
   let server: ReturnType<typeof Fastify>;
   let aliceSocket: ClientSocketType;
   let bobSocket: ClientSocketType;
+  let primaryId: string;
   let appId: string;
   let apiKey: string;
   const PORT = 4033;
@@ -20,6 +21,7 @@ describe('Presence & Heartbeat Subsystem', () => {
     const reg = await applicationService.registerApp({
       name: 'Presence Test App',
     });
+    primaryId = reg.record.id;
     appId = reg.record.applicationId;
     apiKey = reg.apiKey;
 
@@ -42,6 +44,9 @@ describe('Presence & Heartbeat Subsystem', () => {
   afterAll(async () => {
     aliceSocket?.disconnect();
     bobSocket?.disconnect();
+    if (primaryId) {
+      await applicationService.deleteApp(primaryId);
+    }
     await server.close();
   });
 

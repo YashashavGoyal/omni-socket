@@ -7,6 +7,7 @@ import { applicationService } from '../src/services/application/application.serv
 describe('Dual-Tier Rate Limiting Subsystem', () => {
   let server: ReturnType<typeof Fastify>;
   let socket: ClientSocketType;
+  let primaryId: string;
   const PORT = 4032;
 
   beforeAll(async () => {
@@ -17,6 +18,7 @@ describe('Dual-Tier Rate Limiting Subsystem', () => {
     const reg = await applicationService.registerApp({
       name: 'Rate Limit Test App',
     });
+    primaryId = reg.record.id;
 
     socket = ClientSocket(`http://127.0.0.1:${PORT}`, {
       auth: { applicationId: reg.record.applicationId, apiKey: reg.apiKey, userId: 'spammer' },
@@ -28,6 +30,9 @@ describe('Dual-Tier Rate Limiting Subsystem', () => {
 
   afterAll(async () => {
     socket?.disconnect();
+    if (primaryId) {
+      await applicationService.deleteApp(primaryId);
+    }
     await server.close();
   });
 

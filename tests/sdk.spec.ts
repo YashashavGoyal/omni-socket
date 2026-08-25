@@ -8,6 +8,7 @@ import { applicationService } from '../src/services/application/application.serv
 describe('Lightweight Developer Client SDK (OmniSocketClient)', () => {
   let server: FastifyInstance;
   let port: number;
+  let primaryId: string;
   let appId: string;
   let apiKey: string;
 
@@ -23,11 +24,15 @@ describe('Lightweight Developer Client SDK (OmniSocketClient)', () => {
     const reg = await applicationService.registerApp({
       name: 'SDK Test App',
     });
+    primaryId = reg.record.id;
     appId = reg.record.applicationId;
     apiKey = reg.apiKey;
   });
 
   afterAll(async () => {
+    if (primaryId) {
+      await applicationService.deleteApp(primaryId);
+    }
     await server.close();
   });
 

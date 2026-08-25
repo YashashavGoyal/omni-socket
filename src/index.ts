@@ -5,6 +5,7 @@ import { fastifyErrorHandler } from './shared/errors';
 import { registerHealthRoutes } from './api/health/health.routes';
 import { registerDocsRoutes } from './api/docs/docs.controller';
 import { registerTenantRoutes } from './api/apps/tenant.controller';
+import { registerAdminRoutes } from './api/admin/admin.controller';
 import { registerGracefulShutdown } from './shared/lifecycle';
 
 const server = Fastify({
@@ -27,10 +28,11 @@ const server = Fastify({
 // Attach central Fastify error handler middleware
 server.setErrorHandler(fastifyErrorHandler);
 
-// Register operational readiness health, tenant REST management & docs routes
+// Register operational readiness health, tenant REST management, admin dashboard & docs routes
 registerHealthRoutes(server);
 registerDocsRoutes(server);
 registerTenantRoutes(server);
+registerAdminRoutes(server);
 
 // Attach Socket.IO transport layer
 const io = setupSocketIO(server);
@@ -42,6 +44,7 @@ const start = async () => {
   try {
     await server.listen({ port: config.PORT, host: config.HOST });
     server.log.info(`[OmniSocket] Fastify server running on http://${config.HOST}:${config.PORT}`);
+    server.log.info(`[OmniSocket] Master Admin Dashboard available at http://${config.HOST}:${config.PORT}${config.ADMIN_PANEL_PATH}`);
   } catch (err) {
     server.log.error(err);
     process.exit(1);

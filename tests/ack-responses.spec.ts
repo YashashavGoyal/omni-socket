@@ -9,6 +9,7 @@ import { applicationService } from '../src/services/application/application.serv
 describe('Structured Event ACK & Standardized Response Wrapping Subsystem', () => {
   let server: FastifyInstance;
   let port: number;
+  let primaryId: string;
   let appId: string;
   let apiKey: string;
 
@@ -24,11 +25,15 @@ describe('Structured Event ACK & Standardized Response Wrapping Subsystem', () =
     const reg = await applicationService.registerApp({
       name: 'Ack Test App',
     });
+    primaryId = reg.record.id;
     appId = reg.record.applicationId;
     apiKey = reg.apiKey;
   });
 
   afterAll(async () => {
+    if (primaryId) {
+      await applicationService.deleteApp(primaryId);
+    }
     await server.close();
   });
 

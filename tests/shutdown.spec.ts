@@ -8,12 +8,13 @@ import { applicationService } from '../src/services/application/application.serv
 describe('Graceful Shutdown Subsystem', () => {
   let server: ReturnType<typeof Fastify>;
   let socket: ClientSocketType;
+  let primaryId: string;
   const PORT = 4035;
 
   beforeAll(async () => {
     // Stub process.exit for testing
     // @ts-ignore
-    process.exit = () => {};
+    process.exit = () => { };
 
     server = Fastify({ logger: false });
     const io = setupSocketIO(server);
@@ -23,6 +24,7 @@ describe('Graceful Shutdown Subsystem', () => {
     const reg = await applicationService.registerApp({
       name: 'Shutdown Test App',
     });
+    primaryId = reg.record.id;
 
     socket = ClientSocket(`http://127.0.0.1:${PORT}`, {
       auth: { applicationId: reg.record.applicationId, apiKey: reg.apiKey, userId: 'alice' },
@@ -33,7 +35,11 @@ describe('Graceful Shutdown Subsystem', () => {
   }, 30000);
 
   afterAll(async () => {
+    if (primaryId) {
+      await applicationService.deleteApp(primaryId);
+    }
     socket?.disconnect();
+    await server.close();
   });
 
   it('should broadcast server:shutdown notice to connected client upon shutdown', async () => {

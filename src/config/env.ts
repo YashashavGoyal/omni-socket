@@ -27,6 +27,14 @@ const envSchema = z.object({
       return `omni_dev_${crypto.randomBytes(8).toString('hex')}`;
     }),
 
+  // Obfuscated Master Admin Dashboard Route Path
+  ADMIN_PANEL_PATH: z.string().default('/omni-portal-k').refine((path) => {
+    if (!path.startsWith('/') && path !== '') {
+      throw new Error('ADMIN_PANEL_PATH must start with /');
+    }
+    return true;
+  }),
+
   // Database Configuration
   DATABASE_URL: z.string().default(''),
 
