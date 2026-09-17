@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Fastify, { FastifyInstance } from 'fastify';
 import { setupSocketIO } from '../src/socket';
 import { registerHealthRoutes } from '../src/api/health/health.routes';
-import { OmniSocketClient } from '../src/sdk/omni-client';
+import { OmniSocketClient } from '../sdk/omni-client';
 import { applicationService } from '../src/services/application/application.service';
 
 describe('Lightweight Developer Client SDK (OmniSocketClient)', () => {

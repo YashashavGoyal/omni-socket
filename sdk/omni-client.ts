@@ -1,6 +1,14 @@
 import { io, Socket } from 'socket.io-client';
-import { AckEnvelope } from '../shared/responses/ack-response.formatter';
-import { EventTargetType } from '../socket/handlers/event/IEvent';
+
+export interface AckEnvelope<T = any> {
+  status: 'success' | 'error';
+  code?: string;
+  message?: string;
+  data?: T;
+  timestamp: string;
+}
+
+export type EventTargetType = 'room' | 'user' | 'socket' | 'application';
 
 export interface OmniSocketClientOptions {
   url: string;

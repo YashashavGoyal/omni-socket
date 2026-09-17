@@ -10,13 +10,12 @@
     ],
     "declaration": true,
     "outDir": "./dist/sdk",
-    "rootDir": "./src",
+    "rootDir": "./sdk",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true
   },
   "include": [
-    "src/sdk/**/*",
-    "src/shared/responses/ack-response.formatter.ts"
+    "sdk/**/*"
   ]
 }

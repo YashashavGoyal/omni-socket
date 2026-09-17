@@ -653,7 +653,7 @@ function getAdminDashboardHtml(): string {
       <div class="section-header">
         <h3 class="section-title">TypeScript SDK Quickstart (OmniSocketClient)</h3>
       </div>
-      <pre style="background: rgba(0,0,0,0.5); padding: 1.25rem; border-radius: 10px; font-family: var(--font-mono); color: var(--accent-cyan); font-size: 0.85rem; overflow-x: auto;">import { OmniSocketClient } from './src/sdk/omni-client';
+      <pre style="background: rgba(0,0,0,0.5); padding: 1.25rem; border-radius: 10px; font-family: var(--font-mono); color: var(--accent-cyan); font-size: 0.85rem; overflow-x: auto;">import { OmniSocketClient } from './sdk/omni-client';
 
 const client = new OmniSocketClient({
   url: 'http://localhost:3000',
