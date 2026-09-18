@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Fastify, { FastifyInstance } from 'fastify';
-import { registerAdminRoutes } from '../src/api/admin/admin.controller';
-import { registerTenantRoutes } from '../src/api/apps/tenant.controller';
+import { registerAdminRoutes } from '../src/api/admin';
+import { registerTenantRoutes } from '../src/api/apps';
 import { fastifyErrorHandler } from '../src/shared/errors';
 import { config } from '../src/config/env';
 

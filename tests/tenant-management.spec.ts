@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Fastify from 'fastify';
-import { registerTenantRoutes } from '../src/api/apps/tenant.controller';
+import { registerTenantRoutes } from '../src/api/apps';
 import { fastifyErrorHandler } from '../src/shared/errors';
 import { setupSocketIO } from '../src/socket';
 import { io as ClientSocket, Socket as ClientSocketType } from 'socket.io-client';

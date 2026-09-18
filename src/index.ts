@@ -2,10 +2,10 @@ import Fastify from 'fastify';
 import { config } from './config/env';
 import { setupSocketIO } from './socket';
 import { fastifyErrorHandler } from './shared/errors';
-import { registerHealthRoutes } from './api/health/health.routes';
-import { registerDocsRoutes } from './api/docs/docs.controller';
-import { registerTenantRoutes } from './api/apps/tenant.controller';
-import { registerAdminRoutes } from './api/admin/admin.controller';
+import { registerHealthRoutes } from './api/health';
+import { registerDocsRoutes } from './api/docs';
+import { registerTenantRoutes } from './api/apps';
+import { registerAdminRoutes } from './api/admin';
 import { registerGracefulShutdown } from './shared/lifecycle';
 
 const server = Fastify({
