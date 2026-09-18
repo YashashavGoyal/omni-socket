@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { securitySanitizer } from '../src/shared/security/security-sanitizer';
+import { securitySanitizer } from '../src/middleware';
 import { ValidationError } from '../src/shared/errors';
 
 describe('Security Hardening & Input Sanitizer Subsystem', () => {

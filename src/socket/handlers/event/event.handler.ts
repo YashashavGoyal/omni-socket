@@ -1,10 +1,9 @@
 import { Socket } from 'socket.io';
 import { eventService } from './event.service';
-import { rateLimiterService } from '../../../shared/rate-limiter/rate-limiter.service';
+import { rateLimiterService, securitySanitizer } from '../../../middleware';
 import { featureGuardService } from '../../../services/feature-guard/feature-guard.service';
 import { formatErrorResponse } from '../../../shared/errors';
 import { auditLogger } from '../../../shared/logger/audit-logger';
-import { securitySanitizer } from '../../../shared/security/security-sanitizer';
 import { AckResponseFormatter, AckCallback } from '../../../shared/responses/ack-response.formatter';
 import { EmitEventPayload } from './IEvent';
 

@@ -1,6 +1,6 @@
 import { Socket } from 'socket.io';
-import { TooManyRequestsError } from '../errors';
-import { config } from '../../config/env';
+import { TooManyRequestsError } from '../shared/errors';
+import { config } from '../config/env';
 
 interface RateLimitWindow {
   count: number;

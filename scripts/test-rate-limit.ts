@@ -1,4 +1,4 @@
-import { rateLimiterService } from '../src/shared/rate-limiter/rate-limiter.service';
+import { rateLimiterService } from '../src/middleware';
 import { TooManyRequestsError } from '../src/shared/errors';
 
 async function runRateLimiterTests() {

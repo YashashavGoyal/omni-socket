@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { applicationService } from '../../services/application/application.service';
-import { adminAuthMiddleware } from '../../shared/auth/admin-auth.middleware';
+import { adminAuthMiddleware } from '../../middleware';
 import { ValidationError } from '../../shared/errors';
 
 const createAppSchema = z.object({

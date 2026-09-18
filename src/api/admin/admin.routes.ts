@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { adminAuthMiddleware } from '../../shared/auth/admin-auth.middleware';
+import { adminAuthMiddleware } from '../../middleware';
 import { applicationService } from '../../services/application/application.service';
 import { healthService } from '../health/health.service';
 import { config } from '../../config/env';

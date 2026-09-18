@@ -1,4 +1,4 @@
-import { ValidationError } from '../errors';
+import { ValidationError } from '../shared/errors';
 
 const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 const MAX_DEPTH = 10;
