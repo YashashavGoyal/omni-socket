@@ -518,7 +518,7 @@
     <a href="#" class="brand">
       <div class="brand-logo">⚡</div>
       <div class="brand-title">
-        OmniSocket <span class="brand-badge">Admin v1.3</span>
+        OmniSocket <span id="adminVersionBadge" class="brand-badge">Admin</span>
       </div>
     </a>
     <div class="header-actions">
@@ -819,6 +819,11 @@ await client.broadcastToRoom('conference-room-101', 'signal:webrtc_offer', { sdp
       }
 
       function renderHealthDetails(readiness, memory) {
+        if (readiness && readiness.version) {
+          var v = readiness.version.replace(/^OmniSocket\s*/i, '');
+          document.getElementById('adminVersionBadge').textContent = 'Admin ' + v;
+        }
+
         var subContainer = document.getElementById('subsystemsContainer');
         subContainer.innerHTML = Object.keys(readiness.subsystems || {}).map(function(key) {
           return '<div style="display: flex; justify-content: space-between; padding: 0.5rem; background: rgba(0,0,0,0.3); border-radius: 8px;">' +

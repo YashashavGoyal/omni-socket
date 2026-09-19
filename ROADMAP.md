@@ -4,7 +4,7 @@ This document outlines the current feature state and planned future enhancements
 
 ---
 
-## 📌 Current Capabilities (v1.3.0 Release)
+## 📌 Current Capabilities (v1.4.0 Release)
 
 - [x] **Multi-Tenant Authentication**: Handshake validation with `applicationId`, `apiKey`, and `userId`.
 - [x] **Room Isolation & WebRTC Signaling**: Dynamic room creation (`scopedRoomKey`) and broadcast routing.

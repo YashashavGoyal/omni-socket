@@ -1,6 +1,6 @@
 {
   "name": "omni-socket",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Standalone, multi-tenant, application-agnostic realtime Socket.IO server infrastructure.",
   "main": "dist/index.js",
   "scripts": {
@@ -14,7 +14,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "seed": "tsx scripts/seed.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "bump-version": "node scripts/bump-version.js"
   },
   "keywords": [
     "socket.io",

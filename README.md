@@ -1,4 +1,4 @@
-# 🚀 OmniSocket Realtime Engine (v1.3.0)
+# 🚀 OmniSocket Realtime Engine (v1.4.0)
 
 OmniSocket is a **production-ready, application-agnostic, multi-tenant WebSocket infrastructure engine** built on top of Node.js, Fastify, Socket.IO, PostgreSQL (Drizzle ORM), and TypeScript.
 

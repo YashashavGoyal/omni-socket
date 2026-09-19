@@ -1,12 +1,13 @@
 import { connectionRegistry } from '../../socket/connection/connection-registry';
 import { applicationService } from '../../services/application/application.service';
 import { io } from '../../socket';
+import { APP_VERSION } from '../../config/version';
 
 export class HealthService {
   public getLiveness() {
     return {
       status: 'ok',
-      version: 'OmniSocket v1.3.0',
+      version: `OmniSocket v${APP_VERSION}`,
       timestamp: new Date().toISOString(),
       uptimeSeconds: Number(process.uptime().toFixed(2)),
     };
@@ -21,7 +22,7 @@ export class HealthService {
 
     return {
       status: isFullyReady ? 'ready' : 'not_ready',
-      version: 'OmniSocket v1.3.0',
+      version: `OmniSocket v${APP_VERSION}`,
       timestamp: new Date().toISOString(),
       subsystems: {
         socketIO: isSocketReady ? 'healthy' : 'unhealthy',
