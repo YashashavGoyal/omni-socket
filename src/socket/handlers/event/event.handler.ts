@@ -8,10 +8,15 @@ import { AckResponseFormatter, AckCallback } from '../../../shared/responses/ack
 import { EmitEventPayload } from './IEvent';
 
 export function registerEventHandlers(socket: Socket): void {
-  // Automatically join socket to its application space "app:<appId>"
-  const appId = socket.data.applicationId;
+  // Automatically join socket to its application space "app:<appId>" and user space "user:<appId>:<userId>"
+  const appId = socket.data.applicationId as string | undefined;
+  const userId = socket.data.userId as string | undefined;
+
   if (appId) {
     socket.join(`app:${appId}`);
+  }
+  if (appId && userId) {
+    socket.join(`user:${appId}:${userId}`);
   }
 
   // Handle generic custom event emitting

@@ -18,6 +18,10 @@ services:
       - ADMIN_API_KEY=${ADMIN_API_KEY:-omni_dev_super_secret_key_12345}
       - ADMIN_PANEL_PATH=${ADMIN_PANEL_PATH:-/admin-route}
       - DATABASE_URL=${DATABASE_URL}
+      - REDIS_ENABLED=${REDIS_ENABLED:-false}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+    depends_on:
+      - redis
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
@@ -26,3 +30,15 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: omni-socket-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

@@ -1,5 +1,6 @@
 import { connectionRegistry } from '../../socket/connection/connection-registry';
 import { applicationService } from '../../services/application/application.service';
+import { redisService } from '../../services/redis/redis.service';
 import { io } from '../../socket';
 import { APP_VERSION } from '../../config/version';
 
@@ -17,8 +18,10 @@ export class HealthService {
     const isSocketReady = !!io;
     const isRegistryReady = connectionRegistry.isHealthy();
     const isAppRepoReady = await applicationService.isHealthy();
+    const redisHealth = await redisService.healthCheck();
 
-    const isFullyReady = isSocketReady && isRegistryReady && isAppRepoReady;
+    const isRedisReady = redisHealth.status !== 'unhealthy';
+    const isFullyReady = isSocketReady && isRegistryReady && isAppRepoReady && isRedisReady;
 
     return {
       status: isFullyReady ? 'ready' : 'not_ready',
@@ -28,6 +31,7 @@ export class HealthService {
         socketIO: isSocketReady ? 'healthy' : 'unhealthy',
         connectionRegistry: isRegistryReady ? 'healthy' : 'unhealthy',
         applicationRepository: isAppRepoReady ? 'healthy' : 'unhealthy',
+        redis: redisHealth.status,
       },
     };
   }

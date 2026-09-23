@@ -4,6 +4,7 @@ const testSuites = [
   { name: 'Auth & Messaging Router', script: 'scripts/test-events.ts' },
   { name: 'Dual-Tier Rate Limiting', script: 'scripts/test-rate-limit.ts' },
   { name: 'Presence & Heartbeat Engine', script: 'scripts/test-presence.ts' },
+  { name: 'Redis Subsystem & Fail-Fast Mode', script: 'scripts/test-redis.ts' },
   { name: 'Structured Observability & Audit Logging', script: 'scripts/test-observability.ts' },
   { name: 'Operational Readiness & Health Checks', script: 'scripts/test-health.ts' },
   { name: 'Graceful Shutdown (SIGTERM / SIGINT)', script: 'scripts/test-shutdown.ts' },

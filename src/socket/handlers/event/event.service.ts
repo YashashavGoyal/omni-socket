@@ -39,13 +39,12 @@ export class EventService {
       }
 
       case 'user': {
-        // Find all active socket connections for the target userId
-        const targetSockets = connectionRegistry.getSocketsByUserId(payload.targetId);
-        for (const targetSocketId of targetSockets) {
-          if (!payload.includeSelf && targetSocketId === socket.id) {
-            continue;
-          }
-          socket.nsp.to(targetSocketId).emit(payload.eventName, eventMessage);
+        // Broadcast to scoped user room across all cluster instances
+        const userRoomKey = `user:${senderAppId}:${payload.targetId}`;
+        if (payload.includeSelf) {
+          socket.nsp.to(userRoomKey).emit(payload.eventName, eventMessage);
+        } else {
+          socket.to(userRoomKey).emit(payload.eventName, eventMessage);
         }
         break;
       }

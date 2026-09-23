@@ -46,6 +46,18 @@ const envSchema = z.object({
 
   // Presence & Heartbeat Defaults
   HEARTBEAT_INTERVAL_MS: z.coerce.number().int().positive().default(30000),
+
+  // Redis Horizontal Scaling Configuration
+  REDIS_ENABLED: z.coerce.boolean().default(false),
+  REDIS_URL: z.string().default(''),
+}).superRefine((data, ctx) => {
+  if (data.REDIS_ENABLED && !data.REDIS_URL.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'REDIS_URL is strictly required when REDIS_ENABLED=true',
+      path: ['REDIS_URL'],
+    });
+  }
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
