@@ -3,12 +3,26 @@ import { connectionRegistry } from '../../connection/connection-registry';
 import { authorizationService } from '../../../services/auth/authorization.service';
 import { PresenceRecord, PresenceUpdatePayload, UserPresenceStatus } from './IPresence';
 import { ValidationError } from '../../../shared/errors';
+import { redisService } from '../../../services/redis/redis.service';
 
 export class PresenceService {
   private presenceMap = new Map<string, PresenceRecord>();
+  private readonly PRESENCE_TTL_SECONDS = 60;
 
   private getPresenceKey(applicationId: string, userId: string): string {
     return `${applicationId}:${userId}`;
+  }
+
+  private syncToRedis(record: PresenceRecord): void {
+    if (redisService.isRedisEnabled()) {
+      const redisClient = redisService.getDataClient();
+      if (redisClient) {
+        const redisKey = `omni:presence:${record.applicationId}:${record.userId}`;
+        redisClient.setex(redisKey, this.PRESENCE_TTL_SECONDS, JSON.stringify(record)).catch((err) => {
+          console.error(`[Redis Presence Sync Error] ${redisKey}:`, err);
+        });
+      }
+    }
   }
 
   /**
@@ -31,6 +45,7 @@ export class PresenceService {
     };
 
     this.presenceMap.set(key, record);
+    this.syncToRedis(record);
     return record;
   }
 
@@ -56,6 +71,7 @@ export class PresenceService {
     };
 
     this.presenceMap.set(key, record);
+    this.syncToRedis(record);
     return { isFullyOffline, record };
   }
 
@@ -95,6 +111,7 @@ export class PresenceService {
     };
 
     this.presenceMap.set(key, record);
+    this.syncToRedis(record);
 
     // Broadcast only if a specific room is targeted
     if (payload.roomId) {
@@ -120,14 +137,45 @@ export class PresenceService {
     existing.lastSeenAt = new Date();
     existing.updatedAt = new Date();
     this.presenceMap.set(key, existing);
+    this.syncToRedis(existing);
     return existing;
   }
 
   /**
-   * Retrieves current presence record for a user.
+   * Retrieves current presence record for a user from local memory cache.
    */
   public getPresence(applicationId: string, userId: string): PresenceRecord | null {
     return this.presenceMap.get(this.getPresenceKey(applicationId, userId)) || null;
+  }
+
+  /**
+   * Asynchronously retrieves presence record across cluster nodes from Redis if not present in local node memory.
+   */
+  public async getPresenceAsync(applicationId: string, userId: string): Promise<PresenceRecord | null> {
+    const localRecord = this.getPresence(applicationId, userId);
+    if (localRecord) {
+      return localRecord;
+    }
+
+    if (redisService.isRedisEnabled()) {
+      const redisClient = redisService.getDataClient();
+      if (redisClient) {
+        const redisKey = `omni:presence:${applicationId}:${userId}`;
+        const rawJson = await redisClient.get(redisKey);
+        if (rawJson) {
+          try {
+            const record = JSON.parse(rawJson) as PresenceRecord;
+            record.lastSeenAt = new Date(record.lastSeenAt);
+            record.updatedAt = new Date(record.updatedAt);
+            return record;
+          } catch {
+            return null;
+          }
+        }
+      }
+    }
+
+    return null;
   }
 }
 

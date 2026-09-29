@@ -1,4 +1,5 @@
 import { Server as SocketIOServer } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
 import { FastifyInstance } from 'fastify';
 import { config } from '../config/env';
 import { authenticateHandshake } from './middleware/auth.middleware';
@@ -7,6 +8,7 @@ import { registerEventHandlers } from './handlers/event/event.handler';
 import { registerPresenceHandlers } from './handlers/presence/presence.handler';
 import { presenceService } from './handlers/presence/presence.service';
 import { connectionRegistry } from './connection/connection-registry';
+import { redisService } from '../services/redis/redis.service';
 
 export let io: SocketIOServer;
 
@@ -19,6 +21,11 @@ export function setupSocketIO(fastifyServer: FastifyInstance): SocketIOServer {
     transports: ['websocket', 'polling'],
     maxHttpBufferSize: 1e6, // Safety Limit: 1MB Max WebSocket Payload Size
   });
+
+  if (redisService.isRedisEnabled()) {
+    io.adapter(createAdapter(redisService.getPubClient(), redisService.getSubClient()));
+    fastifyServer.log.info('[Socket.IO] Redis Pub/Sub adapter initialized for cross-node broadcasting');
+  }
 
   // Intercept connection handshakes with generic authentication
   io.use(authenticateHandshake);

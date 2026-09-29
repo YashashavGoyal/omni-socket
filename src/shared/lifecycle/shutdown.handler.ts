@@ -49,6 +49,10 @@ export function registerGracefulShutdown(server: FastifyInstance, io: SocketIOSe
       // 3. Stop Fastify HTTP server from accepting new connections
       await server.close();
 
+      // 4. Close Redis client connections
+      const { redisService } = await import('../../services/redis/redis.service');
+      await redisService.closeRedis();
+
       clearTimeout(forceExitTimer);
 
       auditLogger.log({

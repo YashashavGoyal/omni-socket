@@ -4,7 +4,7 @@ This document outlines the current feature state and planned future enhancements
 
 ---
 
-## 📌 Current Capabilities (v1.4.0 Release)
+## 📌 Current Capabilities (v1.5.0 Release)
 
 - [x] **Multi-Tenant Authentication**: Handshake validation with `applicationId`, `apiKey`, and `userId`.
 - [x] **Room Isolation & WebRTC Signaling**: Dynamic room creation (`scopedRoomKey`) and broadcast routing.
@@ -22,7 +22,8 @@ This document outlines the current feature state and planned future enhancements
   - Fully responsive on mobile, tablet, and desktop devices.
 - [x] **Developer Client SDK**: Lightweight promise-based `OmniSocketClient` TypeScript SDK.
 - [x] **Dockerization & Containerization**: Production-ready multi-stage `Dockerfile` and `docker-compose.yml`.
-- [x] **Automated Test Suite**: 100% passing Vitest test suite with automated test application cleanup.
+- [x] **Horizontal Scaling via Redis Adapter**: `@socket.io/redis-adapter` integration with explicit fail-fast environment rules (`REDIS_ENABLED` & `REDIS_URL`) and distributed presence TTL syncing.
+- [x] **Automated Test Suite**: 100% passing Vitest & subsystem test suites with automated test application cleanup.
 
 ---
 
@@ -37,9 +38,5 @@ This document outlines the current feature state and planned future enhancements
 - Add SVG/Canvas metrics charts to the Master Admin Panel.
 - Display connection count trends, peak concurrent users (CCU), and message throughput over time.
 
-### 3. 🌐 Horizontal Scaling via Redis Adapter
-- Integrate `@socket.io/redis-adapter` and Redis Pub/Sub.
-- Enable cross-node room broadcasting and seamless multi-instance horizontal scaling.
-
-### 4. 🔐 Advanced RBAC & Scoped Tenant Permissions
+### 3. 🔐 Advanced RBAC & Scoped Tenant Permissions
 - Introduce granular role-based permissions for tenant API keys (e.g. read-only, room-only, broadcast-only).
