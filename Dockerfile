@@ -45,6 +45,9 @@ COPY --chown=node:node --from=deps /app/node_modules ./node_modules
 # Copy compiled JavaScript dist from 'builder' stage
 COPY --chown=node:node --from=builder /app/dist ./dist
 
+# Copy public directory
+COPY --chown=node:node ./public ./public
+
 # Expose server port
 EXPOSE 4000
 
