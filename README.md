@@ -9,6 +9,7 @@ It serves as a standalone real-time messaging gateway for multiple client applic
 ## 🌟 Key Features
 
 * **Multi-Tenant Isolation**: Tenant applications (`applicationId`) share a single engine with complete event and room-level state isolation.
+* **Dual-Mode Handshake & Ephemeral Client Tokens**: Mint temporary scoped tokens (`POST /api/v1/auth/tokens`) so frontends never expose master API keys, with automatic SDK `tokenProvider` reconnects.
 * **Glassmorphic Master Admin Dashboard**: Dedicated administrative GUI (`ADMIN_PANEL_PATH`) for tenant CRUD (Register, Edit, Rotate Key, Delete), real-time socket metrics, heap memory tracking, and health status.
 * **Obfuscated Admin Path**: Protect administrative interfaces from scanners by setting a custom `ADMIN_PANEL_PATH` in `.env`.
 * **Developer Client SDK**: Dedicated promise-based TypeScript SDK (`OmniSocketClient`) for seamless client integration.
@@ -114,6 +115,7 @@ LOG_LEVEL=info
 CORS_ORIGIN=*
 ADMIN_API_KEY=omni_dev_super_secret_key_12345
 ADMIN_PANEL_PATH=/admin-route
+TOKEN_SIGNING_SECRET=omni_jwt_super_secret_signing_key_12345
 DATABASE_URL=postgresql://user:password@localhost:5432/omni_socket
 ```
 

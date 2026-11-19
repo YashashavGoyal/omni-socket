@@ -2,32 +2,132 @@
 
 ## 1. Handshake & Authentication Protocol
 
-Clients must connect via Socket.IO transport and supply authentication credentials in the initial handshake `auth` payload.
+OmniSocket supports **Dual-Mode Authentication** for WebSocket connections:
+1. **Server Mode**: For backend microservices, workers, and administrative scripts using master credentials.
+2. **Client Mode**: For frontend browsers, mobile, and desktop apps using short-lived ephemeral connection tokens.
 
-### Handshake Payload Schema
+---
+
+### A. Ephemeral Client Connection Tokens (Frontend / Untrusted Clients)
+
+To prevent exposing tenant master API keys in frontend JavaScript bundles or DevTools network tabs, tenant backends mint a short-lived token via REST.
+
+#### 1. Minting a Client Token (Backend-to-Server)
+* **POST** `/api/v1/auth/tokens`
+* **Headers**:
+  ```http
+  x-application-id: ourtime
+  x-api-key: <TENANT_MASTER_API_KEY>
+  Content-Type: application/json
+  ```
+* **Request Body**:
+  ```json
+  {
+    "userId": "user_456",
+    "ttlSeconds": 900,
+    "grants": {
+      "allowedRooms": ["lobby", "room:101"],
+      "canPublish": true
+    },
+    "metadata": {
+      "username": "Alex",
+      "role": "moderator"
+    }
+  }
+  ```
+* **Success Response (`201 Created`)**:
+  ```json
+  {
+    "status": "success",
+    "data": {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "tokenType": "Bearer",
+      "expiresAt": "2026-11-20T00:00:00.000Z",
+      "expiresInSeconds": 900
+    }
+  }
+  ```
+
+#### 2. Client WebSocket Handshake Payload
+The client connects using the minted token:
 ```json
 {
   "auth": {
-    "applicationId": "ourtime",
-    "apiKey": "ourtime_secret_key_v1",
-    "userId": "alice_123"
+    "type": "client",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
-}
-```
-
-### Handshake Rejection Errors
-If authentication fails, the connection is immediately terminated with a `connect_error` event:
-```json
-{
-  "status": "error",
-  "code": "UNAUTHORIZED",
-  "message": "Authentication failed: Invalid application credentials"
 }
 ```
 
 ---
 
-## 2. WebSocket Event API Specs
+### B. Server Mode Handshake (Backend Microservices / Daemons)
+```json
+{
+  "auth": {
+    "type": "server",
+    "applicationId": "ourtime",
+    "apiKey": "ourtime_secret_key_v1",
+    "userId": "backend_worker"
+  }
+}
+```
+
+---
+
+### C. Handshake Rejection Errors
+If authentication fails, the connection is immediately terminated with a `connect_error` event:
+```json
+{
+  "status": "error",
+  "code": "UNAUTHORIZED",
+  "message": "Authentication failed: Invalid or expired client connection token"
+}
+```
+
+---
+
+## 2. Developer Client SDK (`OmniSocketClient`)
+
+The official TypeScript SDK supports both authentication modes seamlessly:
+
+### Client Mode with Dynamic `tokenProvider` (Browser / Frontend)
+```typescript
+import { OmniSocketClient, CONNECTION_TYPE } from 'omni-socket-sdk';
+
+const client = new OmniSocketClient({
+  url: 'https://socket.yourdomain.com',
+  type: CONNECTION_TYPE.CLIENT,
+  tokenProvider: async () => {
+    // Calls client's own backend where master API key is safely stored
+    const res = await fetch('/api/realtime-token');
+    const { token } = await res.json();
+    return token;
+  }
+});
+
+await client.connect();
+```
+*Note: With `tokenProvider`, when Socket.IO reconnects (e.g. laptop wake-up, wifi change), the SDK automatically fetches a fresh token before re-handshaking!*
+
+### Server Mode with Master Credentials (Backend Worker)
+```typescript
+import { OmniSocketClient, CONNECTION_TYPE } from 'omni-socket-sdk';
+
+const client = new OmniSocketClient({
+  url: 'https://socket.yourdomain.com',
+  type: CONNECTION_TYPE.SERVER,
+  applicationId: 'ourtime',
+  apiKey: process.env.OMNI_API_KEY!,
+  userId: 'worker_node_1'
+});
+
+await client.connect();
+```
+
+---
+
+## 3. WebSocket Event API Specs
 
 ### A. Room Subsystem (`rooms`)
 
@@ -48,6 +148,7 @@ If authentication fails, the connection is immediately terminated with a `connec
     "scopedRoomKey": "ourtime:call-101"
   }
   ```
+*Note: If client token specifies `grants.allowedRooms`, joining rooms outside that list returns `403 FORBIDDEN`.*
 
 #### 2. Leave Room (`room:leave`)
 * **Emit**: `room:leave`
@@ -72,38 +173,25 @@ If authentication fails, the connection is immediately terminated with a `connec
   ```json
   {
     "roomId": "call-101",
-    "event": "signal:offer",
-    "data": {
-      "sdp": "v=0\r\no=- 123456...",
-      "type": "offer"
-    }
+    "event": "chat:message",
+    "data": { "text": "Hello!" },
+    "includeSelf": false
   }
   ```
-* **Received by Peer Clients in Room**: Event `signal:offer` with payload `{ "sdp": "..." }`.
+*Note: If client token specifies `grants.canPublish === false`, broadcasting returns `403 FORBIDDEN`.*
 
 ---
 
-### B. Presence & Heartbeat Subsystem (`presence`)
+### B. Presence Subsystem (`presence`)
 
-#### 1. Update Status (`presence:update`)
+#### 1. Update Presence (`presence:update`)
 * **Emit**: `presence:update`
 * **Payload**:
   ```json
   {
     "roomId": "call-101",
-    "status": "busy",
-    "customStatusMessage": "In a meeting"
-  }
-  ```
-* **Broadcast to Room (`presence:changed`)**:
-  ```json
-  {
-    "userId": "alice_123",
-    "applicationId": "ourtime",
-    "status": "busy",
-    "customStatusMessage": "In a meeting",
-    "activeSocketsCount": 1,
-    "lastSeenAt": "2026-08-18T01:00:00.000Z"
+    "status": "online",
+    "customStatusMessage": "Focusing"
   }
   ```
 
@@ -113,8 +201,7 @@ If authentication fails, the connection is immediately terminated with a `connec
   ```json
   {
     "status": "success",
-    "event": "presence:pong",
-    "lastSeenAt": "2026-08-18T01:00:05.000Z"
+    "timestamp": "2026-11-20T00:00:00.000Z"
   }
   ```
 
@@ -130,7 +217,7 @@ If authentication fails, the connection is immediately terminated with a `connec
     "targetType": "room",
     "targetId": "call-101",
     "eventName": "chat:message",
-    "data": {
+    "payload": {
       "text": "Hello world!"
     }
   }
@@ -138,7 +225,7 @@ If authentication fails, the connection is immediately terminated with a `connec
 
 ---
 
-## 3. Operational REST Probes
+## 4. Operational REST Probes
 
 ### 1. Liveness Probe
 * **GET** `/health/live`
@@ -146,7 +233,7 @@ If authentication fails, the connection is immediately terminated with a `connec
   ```json
   {
     "status": "ok",
-    "timestamp": "2026-08-18T01:00:00.000Z",
+    "timestamp": "2026-11-20T00:00:00.000Z",
     "uptimeSeconds": 3600.5
   }
   ```
@@ -157,7 +244,7 @@ If authentication fails, the connection is immediately terminated with a `connec
   ```json
   {
     "status": "ready",
-    "timestamp": "2026-08-18T01:00:00.000Z",
+    "timestamp": "2026-11-20T00:00:00.000Z",
     "subsystems": {
       "socketIO": "healthy",
       "connectionRegistry": "healthy",
@@ -172,7 +259,7 @@ If authentication fails, the connection is immediately terminated with a `connec
   ```json
   {
     "status": "ok",
-    "timestamp": "2026-08-18T01:00:00.000Z",
+    "timestamp": "2026-11-20T00:00:00.000Z",
     "uptimeSeconds": 3600.5,
     "connections": {
       "activeSockets": 42
