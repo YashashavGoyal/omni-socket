@@ -9,6 +9,8 @@ export class EventService {
    * Routes a generic custom event to room, user, socket, or application target.
    */
   public emitEvent(socket: Socket, payload: EmitEventPayload): void {
+    authorizationService.assertCanPublish(socket);
+
     if (!payload || !payload.targetType || !payload.targetId || !payload.eventName) {
       throw new ValidationError('Invalid emit payload: targetType, targetId, and eventName are required');
     }

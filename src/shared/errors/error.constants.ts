@@ -35,10 +35,14 @@ export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
 
 
 export const ERROR_MESSAGES = {
-  MISSING_HANDSHAKE_AUTH: 'Missing applicationId or apiKey in handshake.auth',
+  MISSING_HANDSHAKE_AUTH: 'Missing authentication credentials in handshake.auth',
+  MISSING_TOKEN: 'Missing client connection token in handshake.auth',
+  INVALID_OR_EXPIRED_TOKEN: 'Authentication failed: Invalid or expired client connection token',
   INVALID_CREDENTIALS: 'Authentication failed: Invalid application credentials',
   UNAUTHORIZED_ACCESS: 'Authentication required to perform this action',
   FORBIDDEN_RESOURCE: 'Access denied: You do not have permission for this resource',
+  TOKEN_ROOM_FORBIDDEN: 'Access denied: Token grants do not permit joining this room',
+  TOKEN_PUBLISH_FORBIDDEN: 'Access denied: Token grants do not permit publishing',
   APPLICATION_NOT_FOUND: 'Application not found',
   RESOURCE_NOT_FOUND: 'The requested resource was not found',
   RATE_LIMIT_EXCEEDED: 'Rate limit exceeded. Please try again later',
