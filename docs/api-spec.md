@@ -49,7 +49,7 @@ To prevent exposing tenant master API keys in frontend JavaScript bundles or Dev
   ```
 
 #### 2. Client WebSocket Handshake Payload
-The client connects using the minted token:
+The client connects using the minted token. Under OmniSocket v2.0, the connection `type: "client"` is strictly required, and tenant master credentials must **never** be included:
 ```json
 {
   "auth": {
@@ -58,10 +58,12 @@ The client connects using the minted token:
   }
 }
 ```
+*(Strict Protocol: Sending an `apiKey` or `applicationId` in client mode is immediately rejected to prevent accidental frontend secret leaks).*
 
 ---
 
 ### B. Server Mode Handshake (Backend Microservices / Daemons)
+Server microservices authenticate using their tenant master credentials. Under OmniSocket v2.0, `type: "server"`, `applicationId`, `apiKey`, and `userId` are all strictly required:
 ```json
 {
   "auth": {
@@ -72,18 +74,29 @@ The client connects using the minted token:
   }
 }
 ```
+*(Strict Protocol: Sending a `token` in server mode is rejected).*
 
 ---
 
 ### C. Handshake Rejection Errors
-If authentication fails, the connection is immediately terminated with a `connect_error` event:
+If authentication fails during the Socket.IO handshake, the connection is immediately terminated with a `connect_error` event containing standard error envelopes:
+
 ```json
 {
   "status": "error",
   "code": "UNAUTHORIZED",
-  "message": "Authentication failed: Invalid or expired client connection token"
+  "message": "<Error Message>"
 }
 ```
+
+Standard error messages:
+| Scenario | Error Message |
+|---|---|
+| Missing or invalid `type` | `Missing or invalid connection type in handshake.auth (must be 'server' or 'client')` |
+| Client missing token or leaking apiKey | `Client connection requires token and must not include apiKey or applicationId` |
+| Server missing fields or supplying token | `Server connection requires applicationId, apiKey, and userId, and must not include token` |
+| Tampered or expired client token | `Authentication failed: Invalid or expired client connection token` |
+| Invalid master API key / disabled app | `Authentication failed: Invalid application credentials` |
 
 ---
 

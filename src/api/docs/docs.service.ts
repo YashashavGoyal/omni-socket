@@ -54,7 +54,7 @@ Content-Type: application/json
 \`\`\`
 
 #### Client Handshake Payload
-The client connects using the minted token:
+The client connects using the minted token. Under OmniSocket v2.0, \`type: "client"\` is strictly required and tenant master credentials must not be passed:
 \`\`\`json
 {
   "auth": {
@@ -67,6 +67,7 @@ The client connects using the minted token:
 ---
 
 ### 2. Server Mode Handshake (Backend Microservices / Daemons)
+Server microservices authenticate using their tenant master credentials. \`type: "server"\`, \`applicationId\`, \`apiKey\`, and \`userId\` are all strictly required:
 \`\`\`json
 {
   "auth": {
@@ -80,15 +81,22 @@ The client connects using the minted token:
 
 ---
 
-### Authentication Error Response
-If authentication fails, the server emits a \`connect_error\` event and closes the socket:
+### Authentication Error Responses
+If authentication fails during the Socket.IO handshake, the server emits a \`connect_error\` event and closes the socket:
 \`\`\`json
 {
   "status": "error",
   "code": "UNAUTHORIZED",
-  "message": "Authentication failed: Invalid or expired client connection token"
+  "message": "<Error Message>"
 }
 \`\`\`
+
+Standard error messages:
+- **Missing or invalid type**: \`Missing or invalid connection type in handshake.auth (must be 'server' or 'client')\`
+- **Malformed client handshake**: \`Client connection requires token and must not include apiKey or applicationId\`
+- **Malformed server handshake**: \`Server connection requires applicationId, apiKey, and userId, and must not include token\`
+- **Invalid or expired token**: \`Authentication failed: Invalid or expired client connection token\`
+- **Invalid master credentials**: \`Authentication failed: Invalid application credentials\`
 `,
     });
 
