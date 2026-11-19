@@ -25,14 +25,14 @@ export interface OmniSocketBaseOptions {
 }
 
 export interface OmniSocketServerOptions extends OmniSocketBaseOptions {
-  type?: typeof CONNECTION_TYPE.SERVER;
+  type: typeof CONNECTION_TYPE.SERVER;
   applicationId: string;
   apiKey: string;
-  userId?: string;
+  userId: string;
 }
 
 export interface OmniSocketClientTokenOptions extends OmniSocketBaseOptions {
-  type?: typeof CONNECTION_TYPE.CLIENT;
+  type: typeof CONNECTION_TYPE.CLIENT;
   token?: string;
   tokenProvider?: () => Promise<string> | string;
   userId?: string;
@@ -95,10 +95,7 @@ export class OmniSocketClient {
    * Connect to the OmniSocket real-time engine with auth credentials (server key or client token).
    */
   public async connect(): Promise<void> {
-    const isClientMode =
-      'token' in this.options ||
-      'tokenProvider' in this.options ||
-      ('type' in this.options && this.options.type === CONNECTION_TYPE.CLIENT);
+    const isClientMode = this.options.type === CONNECTION_TYPE.CLIENT;
 
     const resolveAuthPayload = async (): Promise<Record<string, any>> => {
       if (isClientMode) {

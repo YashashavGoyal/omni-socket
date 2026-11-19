@@ -257,7 +257,67 @@ describe('Dual-Mode Authentication & Ephemeral Client Connection Tokens', () => 
         socket.on('connect_error', resolve);
       });
 
-      expect(error.message).toContain('Missing client connection token');
+      expect(error.message).toContain('Client connection requires token');
+      socket.disconnect();
+    });
+
+    it('should reject handshake when connection type is missing or invalid', async () => {
+      const socket = ClientSocket(`http://127.0.0.1:${port}`, {
+        auth: {
+          applicationId: mockAppId,
+          apiKey: mockApiKey,
+          userId: 'test_user',
+        },
+        transports: ['websocket'],
+      });
+
+      const error = await new Promise<Error>((resolve) => {
+        socket.on('connect_error', resolve);
+      });
+
+      expect(error.message).toContain("Missing or invalid connection type");
+      socket.disconnect();
+    });
+
+    it('should reject client handshake when server credentials (apiKey) are leaked', async () => {
+      const tokenResult = tokenService.mintClientToken({
+        applicationId: mockAppId,
+        userId: 'client_leaker',
+      });
+
+      const socket = ClientSocket(`http://127.0.0.1:${port}`, {
+        auth: {
+          type: CONNECTION_TYPE.CLIENT,
+          token: tokenResult.token,
+          apiKey: mockApiKey,
+        },
+        transports: ['websocket'],
+      });
+
+      const error = await new Promise<Error>((resolve) => {
+        socket.on('connect_error', resolve);
+      });
+
+      expect(error.message).toContain('Client connection requires token and must not include apiKey or applicationId');
+      socket.disconnect();
+    });
+
+    it('should reject server handshake when token is provided or userId is missing', async () => {
+      const socket = ClientSocket(`http://127.0.0.1:${port}`, {
+        auth: {
+          type: CONNECTION_TYPE.SERVER,
+          applicationId: mockAppId,
+          apiKey: mockApiKey,
+          // Missing userId
+        },
+        transports: ['websocket'],
+      });
+
+      const error = await new Promise<Error>((resolve) => {
+        socket.on('connect_error', resolve);
+      });
+
+      expect(error.message).toContain('Server connection requires applicationId, apiKey, and userId');
       socket.disconnect();
     });
 

@@ -41,6 +41,7 @@ describe('Structured Event ACK & Standardized Response Wrapping Subsystem', () =
     return ClientSocket(`http://127.0.0.1:${port}`, {
       transports: ['websocket'],
       auth: {
+        type: 'server',
         applicationId: appId,
         apiKey: apiKey,
         userId,

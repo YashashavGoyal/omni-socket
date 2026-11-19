@@ -18,23 +18,31 @@ export async function authenticateHandshake(
   try {
     const auth = (socket.handshake.auth || {}) as AuthHandshakePayload;
 
-    const isClientMode =
-      auth.type === CONNECTION_TYPE.CLIENT || (Boolean(auth.token) && !auth.apiKey);
-    const isServerMode =
-      auth.type === CONNECTION_TYPE.SERVER || (Boolean(auth.applicationId) && Boolean(auth.apiKey));
+    // Strict validation: Reject immediately if type is missing or invalid
+    if (auth.type !== CONNECTION_TYPE.CLIENT && auth.type !== CONNECTION_TYPE.SERVER) {
+      auditLogger.log({
+        correlationId,
+        socketId: socket.id,
+        action: 'auth:handshake',
+        status: 'BLOCKED',
+        durationMs: performance.now() - startTime,
+        details: { reason: ERROR_MESSAGES.INVALID_CONNECTION_TYPE },
+      });
+      return next(new UnauthorizedError(ERROR_MESSAGES.INVALID_CONNECTION_TYPE));
+    }
 
-    // 1. Client Mode: Authenticate via Ephemeral Token
-    if (isClientMode) {
-      if (!auth.token) {
+    // 1. Client Mode: Strictly requires token; must NOT include server credentials
+    if (auth.type === CONNECTION_TYPE.CLIENT) {
+      if (!auth.token || auth.apiKey || auth.applicationId) {
         auditLogger.log({
           correlationId,
           socketId: socket.id,
           action: 'auth:handshake:client',
           status: 'BLOCKED',
           durationMs: performance.now() - startTime,
-          details: { reason: ERROR_MESSAGES.MISSING_TOKEN },
+          details: { reason: ERROR_MESSAGES.INVALID_CLIENT_HANDSHAKE },
         });
-        return next(new UnauthorizedError(ERROR_MESSAGES.MISSING_TOKEN));
+        return next(new UnauthorizedError(ERROR_MESSAGES.INVALID_CLIENT_HANDSHAKE));
       }
 
       let payload;
@@ -98,18 +106,18 @@ export async function authenticateHandshake(
       return next();
     }
 
-    // 2. Server Mode: Authenticate via Master applicationId & apiKey
-    if (isServerMode) {
-      if (!auth.applicationId || !auth.apiKey) {
+    // 2. Server Mode: Strictly requires applicationId, apiKey, and userId; must NOT include token
+    if (auth.type === CONNECTION_TYPE.SERVER) {
+      if (!auth.applicationId || !auth.apiKey || !auth.userId || auth.token) {
         auditLogger.log({
           correlationId,
           socketId: socket.id,
           action: 'auth:handshake:server',
           status: 'BLOCKED',
           durationMs: performance.now() - startTime,
-          details: { reason: ERROR_MESSAGES.MISSING_HANDSHAKE_AUTH },
+          details: { reason: ERROR_MESSAGES.INVALID_SERVER_HANDSHAKE },
         });
-        return next(new UnauthorizedError(ERROR_MESSAGES.MISSING_HANDSHAKE_AUTH));
+        return next(new UnauthorizedError(ERROR_MESSAGES.INVALID_SERVER_HANDSHAKE));
       }
 
       const isValid = await applicationService.validateAppCredentials(
@@ -133,7 +141,7 @@ export async function authenticateHandshake(
       // Attach server authenticated context to socket.data
       socket.data.role = CONNECTION_TYPE.SERVER;
       socket.data.applicationId = auth.applicationId;
-      socket.data.userId = auth.userId || 'system';
+      socket.data.userId = auth.userId;
       socket.data.authenticatedAt = new Date();
 
       connectionRegistry.register({
@@ -155,17 +163,6 @@ export async function authenticateHandshake(
 
       return next();
     }
-
-    // 3. Neither client nor server auth credentials supplied
-    auditLogger.log({
-      correlationId,
-      socketId: socket.id,
-      action: 'auth:handshake',
-      status: 'BLOCKED',
-      durationMs: performance.now() - startTime,
-      details: { reason: ERROR_MESSAGES.MISSING_HANDSHAKE_AUTH },
-    });
-    return next(new UnauthorizedError(ERROR_MESSAGES.MISSING_HANDSHAKE_AUTH));
   } catch (error) {
     auditLogger.log({
       correlationId,
