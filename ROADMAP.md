@@ -4,7 +4,7 @@ This document outlines the current feature state and planned future enhancements
 
 ---
 
-## 📌 Current Capabilities (v1.5.0 Release)
+## 📌 Current Capabilities (v2.0.0 Release)
 
 - [x] **Ephemeral Client Connection Tokens (Temporary ID Grant)**: REST minting endpoint (`POST /api/v1/auth/tokens`), stateless HMAC-SHA256 JWT, grant enforcement, and dynamic `tokenProvider` SDK reconnection.
 - [x] **Dual-Mode Multi-Tenant Authentication**: Explicit `server` (master credentials) and `client` (ephemeral token) WebSocket handshake routing.
