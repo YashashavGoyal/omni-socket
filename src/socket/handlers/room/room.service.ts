@@ -36,6 +36,8 @@ export class RoomService {
    * Broadcasts a generic payload to a tenant-isolated room.
    */
   public broadcastToRoom(socket: Socket, payload: BroadcastRoomPayload): string {
+    authorizationService.assertCanPublish(socket);
+
     if (!payload || !payload.roomId || typeof payload.roomId !== 'string' || payload.roomId.trim() === '') {
       throw new ValidationError('Invalid roomId: Room ID must be a non-empty string');
     }

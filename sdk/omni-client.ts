@@ -10,15 +10,36 @@ export interface AckEnvelope<T = any> {
 
 export type EventTargetType = 'room' | 'user' | 'socket' | 'application';
 
-export interface OmniSocketClientOptions {
+export const CONNECTION_TYPE = {
+  SERVER: 'server',
+  CLIENT: 'client',
+} as const;
+
+export type ConnectionType = (typeof CONNECTION_TYPE)[keyof typeof CONNECTION_TYPE];
+
+export interface OmniSocketBaseOptions {
   url: string;
-  applicationId: string;
-  apiKey: string;
-  userId: string;
   autoHeartbeat?: boolean;
   heartbeatIntervalMs?: number;
   transports?: string[];
 }
+
+export interface OmniSocketServerOptions extends OmniSocketBaseOptions {
+  type: typeof CONNECTION_TYPE.SERVER;
+  applicationId: string;
+  apiKey: string;
+  userId: string;
+}
+
+export interface OmniSocketClientTokenOptions extends OmniSocketBaseOptions {
+  type: typeof CONNECTION_TYPE.CLIENT;
+  token?: string;
+  tokenProvider?: () => Promise<string> | string;
+  userId?: string;
+  applicationId?: string;
+}
+
+export type OmniSocketClientOptions = OmniSocketServerOptions | OmniSocketClientTokenOptions;
 
 export interface PresenceUser {
   userId: string;
@@ -31,21 +52,91 @@ export interface PresenceUser {
 
 export class OmniSocketClient {
   private socket: Socket | null = null;
-  private heartbeatTimer: NodeJS.Timeout | null = null;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private currentToken: string | null = null;
 
-  constructor(private options: OmniSocketClientOptions) {}
+  constructor(private options: OmniSocketClientOptions) {
+    if ('token' in options && options.token) {
+      this.currentToken = options.token;
+    }
+  }
 
   /**
-   * Connect to the OmniSocket real-time engine with auth credentials
+   * Helper to resolve the active application ID.
    */
-  public connect(): Promise<void> {
-    return new Promise((resolve, reject) => {
+  public getApplicationId(): string {
+    if ('applicationId' in this.options && this.options.applicationId) {
+      return this.options.applicationId;
+    }
+    const token = this.currentToken || ('token' in this.options ? this.options.token : undefined);
+    if (token) {
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+          const payloadJson =
+            typeof atob === 'function'
+              ? atob(base64)
+              : typeof (globalThis as any).Buffer !== 'undefined'
+              ? (globalThis as any).Buffer.from(base64, 'base64').toString('utf8')
+              : '';
+
+          if (payloadJson) {
+            const payload = JSON.parse(payloadJson);
+            if (payload?.appId) return payload.appId;
+          }
+        }
+      } catch {}
+    }
+    return '';
+  }
+
+  /**
+   * Connect to the OmniSocket real-time engine with auth credentials (server key or client token).
+   */
+  public async connect(): Promise<void> {
+    const isClientMode = this.options.type === CONNECTION_TYPE.CLIENT;
+
+    const resolveAuthPayload = async (): Promise<Record<string, any>> => {
+      if (isClientMode) {
+        const clientOpts = this.options as OmniSocketClientTokenOptions;
+        let token = clientOpts.token;
+        if (clientOpts.tokenProvider) {
+          token = await clientOpts.tokenProvider();
+        }
+        if (token) {
+          this.currentToken = token;
+        }
+        return {
+          type: CONNECTION_TYPE.CLIENT,
+          token,
+          ...(clientOpts.userId ? { userId: clientOpts.userId } : {}),
+        };
+      } else {
+        const serverOpts = this.options as OmniSocketServerOptions;
+        return {
+          type: CONNECTION_TYPE.SERVER,
+          applicationId: serverOpts.applicationId,
+          apiKey: serverOpts.apiKey,
+          ...(serverOpts.userId ? { userId: serverOpts.userId } : {}),
+        };
+      }
+    };
+
+    return new Promise(async (resolve, reject) => {
+      try {
+        // Resolve initial auth payload to validate tokenProvider early
+        await resolveAuthPayload();
+      } catch (err) {
+        return reject(err);
+      }
+
       this.socket = io(this.options.url, {
         transports: this.options.transports || ['websocket'],
-        auth: {
-          applicationId: this.options.applicationId,
-          apiKey: this.options.apiKey,
-          userId: this.options.userId,
+        auth: (cb) => {
+          resolveAuthPayload()
+            .then((payload) => cb(payload))
+            .catch(() => cb({}));
         },
       });
 
@@ -160,8 +251,9 @@ export class OmniSocketClient {
   /**
    * Direct helper to emit a custom event to the entire application space
    */
-  public emitToApp(eventName: string, payload: any): Promise<AckEnvelope> {
-    return this.emitCustomEvent('application', this.options.applicationId, eventName, payload);
+  public emitToApp(eventName: string, payload: any, applicationId?: string): Promise<AckEnvelope> {
+    const targetAppId = applicationId || this.getApplicationId();
+    return this.emitCustomEvent('application', targetAppId, eventName, payload);
   }
 
   /**

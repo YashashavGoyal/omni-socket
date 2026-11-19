@@ -1,4 +1,4 @@
-# 🚀 OmniSocket Realtime Engine (v1.5.0)
+# 🚀 OmniSocket Realtime Engine (v2.0.0)
 
 OmniSocket is a **production-ready, application-agnostic, multi-tenant WebSocket infrastructure engine** built on top of Node.js, Fastify, Socket.IO, PostgreSQL (Drizzle ORM), and TypeScript.
 
@@ -9,6 +9,7 @@ It serves as a standalone real-time messaging gateway for multiple client applic
 ## 🌟 Key Features
 
 * **Multi-Tenant Isolation**: Tenant applications (`applicationId`) share a single engine with complete event and room-level state isolation.
+* **Dual-Mode Handshake & Ephemeral Client Tokens**: Mint temporary scoped tokens (`POST /api/v1/auth/tokens`) so frontends never expose master API keys, with automatic SDK `tokenProvider` reconnects.
 * **Glassmorphic Master Admin Dashboard**: Dedicated administrative GUI (`ADMIN_PANEL_PATH`) for tenant CRUD (Register, Edit, Rotate Key, Delete), real-time socket metrics, heap memory tracking, and health status.
 * **Obfuscated Admin Path**: Protect administrative interfaces from scanners by setting a custom `ADMIN_PANEL_PATH` in `.env`.
 * **Developer Client SDK**: Dedicated promise-based TypeScript SDK (`OmniSocketClient`) for seamless client integration.
@@ -23,18 +24,115 @@ It serves as a standalone real-time messaging gateway for multiple client applic
 
 ---
 
-## 💻 Master Admin Dashboard
+## 💻 Master Admin Dashboard & REST APIs
 
-OmniSocket includes a responsive, glassmorphic Master Admin Panel.
+OmniSocket provides both a responsive, glassmorphic GUI and a programmatic REST API for administrative operations.
 
-- **Configurable Obscure Route**: Configured via `ADMIN_PANEL_PATH`.
-- **Authentication**: Secured via `ADMIN_API_KEY` header/session token.
-- **Tenant Management**:
-  - **Register**: Provision new tenant apps with name, custom slug, and feature toggles.
-  - **Edit Modal**: Update application name, slug, active status, and feature flags dynamically.
-  - **Rotate Key**: Instantly rotate tenant API keys while invalidating old keys.
-  - **Delete**: Soft/hard purge registered tenant applications.
-- **System Metrics**: Realtime socket count, room count, server uptime, heap memory usage, and subsystem health checks.
+### 1. Administrative Web Dashboard
+* **Configurable Obscure Route**: Configured via `ADMIN_PANEL_PATH` in `.env` (protects the dashboard from scanners and bots).
+* **Authentication**: Secured via `x-admin-key: <ADMIN_API_KEY>`.
+* **Tenant Management**:
+  * **Register**: Provision new tenant apps with name, custom slug, and feature toggles.
+  * **Edit Modal**: Update application name, slug, active status, and feature flags dynamically.
+  * **Rotate Key**: Instantly rotate tenant API keys while invalidating old keys.
+  * **Delete**: Delete registered tenant applications.
+* **System Metrics**: Real-time socket count, room count, server uptime, heap memory usage, and subsystem health checks.
+
+### 2. Master Admin REST API Endpoints
+All administrative REST endpoints strictly require the header:
+```http
+x-admin-key: <ADMIN_API_KEY>
+```
+*(Note: Under OmniSocket v2.0, administrative requests must provide `x-admin-key`. The legacy `Authorization: Bearer` fallback is disabled).*
+
+#### A. System Overview & Metrics (`GET /api/v1/admin/stats`)
+Returns system health, active connections, room count, memory usage, and registered applications.
+* **Response (`200 OK`)**:
+  ```json
+  {
+    "status": "success",
+    "timestamp": "2026-11-20T00:00:00.000Z",
+    "summary": {
+      "totalApplications": 3,
+      "activeSockets": 42,
+      "totalRooms": 12,
+      "uptimeSeconds": 3600
+    },
+    "memory": { "heapUsedMB": 45.2, "heapTotalMB": 64.0, "rssMB": 85.1 },
+    "readiness": { "status": "UP", "database": "healthy", "redis": "disabled" },
+    "applications": [...]
+  }
+  ```
+
+#### B. Tenant Management Endpoints (`/api/v1/apps`)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/v1/apps` | List all registered tenant applications |
+| `GET` | `/api/v1/apps/:id` | Get application details by primary UUID |
+| `POST` | `/api/v1/apps` | Register a new tenant application |
+| `PATCH` | `/api/v1/apps/:id` | Update application name, slug, enabled state, or feature flags |
+| `POST` | `/api/v1/apps/:id/rotate-key` | Rotate tenant API key (invalidates previous key immediately) |
+| `DELETE` | `/api/v1/apps/:id` | Delete application by primary UUID |
+
+##### Register Application (`POST /api/v1/apps`)
+* **Headers**: `x-admin-key: <ADMIN_API_KEY>`, `Content-Type: application/json`
+* **Body**:
+  ```json
+  {
+    "name": "Chat Service",
+    "applicationId": "chat-service",
+    "enabled": true,
+    "features": {
+      "presence": true,
+      "rooms": true,
+      "events": true
+    }
+  }
+  ```
+  *(Note: If `applicationId` is omitted, an alphanumeric slug is auto-generated from `name`. Names must contain at least one alphanumeric character).*
+* **Response (`201 Created`)**:
+  ```json
+  {
+    "status": "success",
+    "message": "Application registered successfully. Store the API key safely as it will not be shown again.",
+    "data": {
+      "id": "b1a7d6e4-...",
+      "applicationId": "chat-service",
+      "name": "Chat Service",
+      "enabled": true,
+      "features": { "presence": true, "rooms": true, "events": true },
+      "apiKey": "omni_live_abc123...",
+      "createdAt": "2026-11-20T00:00:00.000Z",
+      "updatedAt": "2026-11-20T00:00:00.000Z"
+    }
+  }
+  ```
+
+##### Update Application (`PATCH /api/v1/apps/:id`)
+* **Body** (all fields optional):
+  ```json
+  {
+    "name": "Updated Name",
+    "applicationId": "new-slug",
+    "enabled": false,
+    "features": { "presence": false }
+  }
+  ```
+
+##### Rotate API Key (`POST /api/v1/apps/:id/rotate-key`)
+* **Response (`200 OK`)**:
+  ```json
+  {
+    "status": "success",
+    "message": "API key rotated successfully. Store the new API key safely.",
+    "data": {
+      "id": "b1a7d6e4-...",
+      "applicationId": "chat-service",
+      "newApiKey": "omni_live_xyz789..."
+    }
+  }
+  ```
 
 ---
 
@@ -114,6 +212,7 @@ LOG_LEVEL=info
 CORS_ORIGIN=*
 ADMIN_API_KEY=omni_dev_super_secret_key_12345
 ADMIN_PANEL_PATH=/admin-route
+TOKEN_SIGNING_SECRET=omni_jwt_super_secret_signing_key_12345
 DATABASE_URL=postgresql://user:password@localhost:5432/omni_socket
 ```
 

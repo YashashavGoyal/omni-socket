@@ -44,6 +44,21 @@ describe('Master Admin Dashboard & Stats Subsystem (/admin & /api/v1/admin/stats
     expect(body.message).toContain('Unauthorized');
   });
 
+  it('should reject Bearer Authorization header (strictly requires x-admin-key)', async () => {
+    const res = await server.inject({
+      method: 'GET',
+      url: '/api/v1/admin/stats',
+      headers: {
+        authorization: `Bearer ${config.ADMIN_API_KEY}`,
+      },
+    });
+
+    expect(res.statusCode).toBe(401);
+    const body = JSON.parse(res.body);
+    expect(body.status).toBe('error');
+    expect(body.message).toContain('Unauthorized');
+  });
+
   it('should return live metrics and applications directory when valid X-Admin-Key is provided', async () => {
     const res = await server.inject({
       method: 'GET',

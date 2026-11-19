@@ -81,7 +81,7 @@ describe('Tenant Management REST API Subsystem (/api/v1/apps)', () => {
 
     // 2. Connect socket with generated key and applicationId slug
     const socket: ClientSocketType = ClientSocket(`http://127.0.0.1:${PORT}`, {
-      auth: { applicationId: customSlug, apiKey: generatedApiKey, userId: 'test_user' },
+      auth: { type: 'server', applicationId: customSlug, apiKey: generatedApiKey, userId: 'test_user' },
       transports: ['websocket'],
     });
 
@@ -112,7 +112,7 @@ describe('Tenant Management REST API Subsystem (/api/v1/apps)', () => {
 
     // 4. Connect socket using the updated slug
     const updatedSocket: ClientSocketType = ClientSocket(`http://127.0.0.1:${PORT}`, {
-      auth: { applicationId: newSlug, apiKey: generatedApiKey, userId: 'test_user' },
+      auth: { type: 'server', applicationId: newSlug, apiKey: generatedApiKey, userId: 'test_user' },
       transports: ['websocket'],
     });
 
@@ -151,7 +151,7 @@ describe('Tenant Management REST API Subsystem (/api/v1/apps)', () => {
 
     // 7. Connect with rotated key
     const reconnectedSocket: ClientSocketType = ClientSocket(`http://127.0.0.1:${PORT}`, {
-      auth: { applicationId: newSlug, apiKey: newApiKey, userId: 'test_user' },
+      auth: { type: 'server', applicationId: newSlug, apiKey: newApiKey, userId: 'test_user' },
       transports: ['websocket'],
     });
 
@@ -171,5 +171,23 @@ describe('Tenant Management REST API Subsystem (/api/v1/apps)', () => {
     });
 
     expect(deleteRes.statusCode).toBe(200);
+  });
+
+  it('should reject application registration when name produces an empty slug', async () => {
+    const createRes = await server.inject({
+      method: 'POST',
+      url: '/api/v1/apps',
+      headers: {
+        'x-admin-key': adminKey,
+      },
+      payload: {
+        name: '!!! --- ???',
+      },
+    });
+
+    expect(createRes.statusCode).toBe(400);
+    const body = JSON.parse(createRes.body);
+    expect(body.status).toBe('error');
+    expect(body.message).toContain('Application name must contain at least one alphanumeric character');
   });
 });

@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { cryptoService } from '../../shared/crypto/crypto.service';
 import { ApplicationFeatures, ApplicationRecord } from './IApplication';
 import { applicationRepository } from './application.repository';
-import { NotFoundError, ConflictError } from '../../shared/errors';
+import { NotFoundError, ConflictError, ValidationError, ERROR_MESSAGES } from '../../shared/errors';
 
 export type SanitizedApplicationRecord = Omit<ApplicationRecord, 'apiKeyHash'>;
 
@@ -99,7 +99,11 @@ export class ApplicationService {
           .toLowerCase()
           .trim()
           .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '') || 'app';
+          .replace(/^-+|-+$/g, '');
+
+      if (!baseSlug) {
+        throw new ValidationError(ERROR_MESSAGES.INVALID_APP_NAME);
+      }
 
       let existing = await applicationRepository.findByApplicationId(baseSlug);
       if (existing) {
