@@ -378,5 +378,44 @@ describe('Dual-Mode Authentication & Ephemeral Client Connection Tokens', () => 
       expect(callCount).toBeGreaterThanOrEqual(1);
       client.disconnect();
     });
+
+    it('should seamlessly fetch a fresh token and reconnect when socket disconnects', async () => {
+      let callCount = 0;
+      const client = new OmniSocketClient({
+        url: `http://127.0.0.1:${port}`,
+        type: CONNECTION_TYPE.CLIENT,
+        tokenProvider: async () => {
+          callCount++;
+          const minted = tokenService.mintClientToken({
+            applicationId: mockAppId,
+            userId: `sdk_reconnect_${callCount}`,
+          });
+          return minted.token;
+        },
+        autoHeartbeat: false,
+      });
+
+      await client.connect();
+      expect(client.isConnected()).toBe(true);
+      expect(callCount).toBe(1);
+
+      // Track the next connect event triggered by automatic reconnection
+      const reconnected = new Promise<void>((resolve) => {
+        const rawSocket = client.getSocket()!;
+        rawSocket.once('connect', () => {
+          resolve();
+        });
+      });
+
+      // Simulate a network drop by closing the underlying transport engine
+      const socketInstance = client.getSocket() as any;
+      socketInstance.io.engine.close();
+
+      await reconnected;
+      expect(client.isConnected()).toBe(true);
+      expect(callCount).toBe(2);
+
+      client.disconnect();
+    });
   });
 });
