@@ -26,12 +26,12 @@ describe('Auth & Messaging Subsystem', () => {
     apiKey = reg.apiKey;
 
     aliceSocket = ClientSocket(`http://127.0.0.1:${PORT}`, {
-      auth: { applicationId: appId, apiKey, userId: 'alice' },
+      auth: { type: 'server', applicationId: appId, apiKey, userId: 'alice' },
       transports: ['websocket'],
     });
 
     bobSocket = ClientSocket(`http://127.0.0.1:${PORT}`, {
-      auth: { applicationId: appId, apiKey, userId: 'bob' },
+      auth: { type: 'server', applicationId: appId, apiKey, userId: 'bob' },
       transports: ['websocket'],
     });
 
@@ -72,7 +72,7 @@ describe('Auth & Messaging Subsystem', () => {
 
   it('should reject unauthenticated connections', async () => {
     const invalidSocket = ClientSocket(`http://127.0.0.1:${PORT}`, {
-      auth: { applicationId: appId, apiKey: 'WRONG_KEY', userId: 'charlie' },
+      auth: { type: 'server', applicationId: appId, apiKey: 'WRONG_KEY', userId: 'charlie' },
       transports: ['websocket'],
     });
 

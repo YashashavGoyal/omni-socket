@@ -26,12 +26,12 @@ describe('Presence & Heartbeat Subsystem', () => {
     apiKey = reg.apiKey;
 
     aliceSocket = ClientSocket(`http://127.0.0.1:${PORT}`, {
-      auth: { applicationId: appId, apiKey, userId: 'alice' },
+      auth: { type: 'server', applicationId: appId, apiKey, userId: 'alice' },
       transports: ['websocket'],
     });
 
     bobSocket = ClientSocket(`http://127.0.0.1:${PORT}`, {
-      auth: { applicationId: appId, apiKey, userId: 'bob' },
+      auth: { type: 'server', applicationId: appId, apiKey, userId: 'bob' },
       transports: ['websocket'],
     });
 

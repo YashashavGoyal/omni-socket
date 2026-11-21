@@ -27,7 +27,7 @@ describe('Graceful Shutdown Subsystem', () => {
     primaryId = reg.record.id;
 
     socket = ClientSocket(`http://127.0.0.1:${PORT}`, {
-      auth: { applicationId: reg.record.applicationId, apiKey: reg.apiKey, userId: 'alice' },
+      auth: { type: 'server', applicationId: reg.record.applicationId, apiKey: reg.apiKey, userId: 'alice' },
       transports: ['websocket'],
     });
 

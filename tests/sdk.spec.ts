@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Fastify, { FastifyInstance } from 'fastify';
 import { setupSocketIO } from '../src/socket';
 import { registerHealthRoutes } from '../src/api/health/health.routes';
-import { OmniSocketClient } from '../sdk/omni-client';
+import { OmniSocketClient, CONNECTION_TYPE } from '../sdk/omni-client';
 import { applicationService } from '../src/services/application/application.service';
 
 describe('Lightweight Developer Client SDK (OmniSocketClient)', () => {
@@ -38,6 +38,7 @@ describe('Lightweight Developer Client SDK (OmniSocketClient)', () => {
 
   it('should connect, join room, update presence, and broadcast using OmniSocketClient SDK', async () => {
     const clientA = new OmniSocketClient({
+      type: CONNECTION_TYPE.SERVER,
       url: `http://127.0.0.1:${port}`,
       applicationId: appId,
       apiKey: apiKey,
@@ -46,6 +47,7 @@ describe('Lightweight Developer Client SDK (OmniSocketClient)', () => {
     });
 
     const clientB = new OmniSocketClient({
+      type: CONNECTION_TYPE.SERVER,
       url: `http://127.0.0.1:${port}`,
       applicationId: appId,
       apiKey: apiKey,
@@ -98,6 +100,7 @@ describe('Lightweight Developer Client SDK (OmniSocketClient)', () => {
 
   it('should support custom event routing via emitCustomEvent, emitToUser, and emitToApp', async () => {
     const clientSender = new OmniSocketClient({
+      type: CONNECTION_TYPE.SERVER,
       url: `http://127.0.0.1:${port}`,
       applicationId: appId,
       apiKey: apiKey,
@@ -106,6 +109,7 @@ describe('Lightweight Developer Client SDK (OmniSocketClient)', () => {
     });
 
     const clientReceiver = new OmniSocketClient({
+      type: CONNECTION_TYPE.SERVER,
       url: `http://127.0.0.1:${port}`,
       applicationId: appId,
       apiKey: apiKey,

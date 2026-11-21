@@ -7,6 +7,7 @@ import { registerHealthRoutes } from './api/health';
 import { registerDocsRoutes } from './api/docs';
 import { registerTenantRoutes } from './api/apps';
 import { registerAdminRoutes } from './api/admin';
+import { registerAuthRoutes } from './api/auth';
 import { registerGracefulShutdown } from './shared/lifecycle';
 
 const server = Fastify({
@@ -34,6 +35,7 @@ registerHealthRoutes(server);
 registerDocsRoutes(server);
 registerTenantRoutes(server);
 registerAdminRoutes(server);
+registerAuthRoutes(server);
 
 const start = async () => {
   try {

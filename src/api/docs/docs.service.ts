@@ -17,32 +17,86 @@ export class DocsService {
     this.topics.set('overview', {
       id: 'overview',
       title: 'Handshake & Authentication Protocol',
-      summary: 'Connection setup, auth credentials, error codes.',
+      summary: 'Connection setup, auth credentials, ephemeral client tokens, error codes.',
       markdownContent: `# OmniSocket Authentication & Handshake Guide
 
 ## Connecting to OmniSocket
-Connect via Socket.IO transport and supply authentication credentials in the initial handshake \`auth\` payload.
+OmniSocket supports dual-mode authentication during the initial Socket.IO handshake:
+1. **Server Mode**: For backend microservices, workers, and bots using master credentials.
+2. **Client Mode**: For frontend browsers and mobile apps using ephemeral connection tokens.
 
-### Handshake Payload Example
-\`\`\`json
+---
+
+### 1. Ephemeral Client Connection Tokens (Frontend / Untrusted Clients)
+To prevent exposing your master API key in client bundles or network tabs, your backend requests a short-lived token from OmniSocket:
+
+#### Minting a Token (Backend-to-Server)
+**POST** \`/api/v1/auth/tokens\`
+\`\`\`http
+// Headers (Strictly required for authentication):
+x-application-id: ourtime
+x-api-key: <TENANT_MASTER_API_KEY>
+Content-Type: application/json
+
+// Body (Token attributes):
 {
-  "auth": {
-    "applicationId": "ourtime",
-    "apiKey": "ourtime_secret_key_v1",
-    "userId": "alice_123"
+  "userId": "user_456",
+  "ttlSeconds": 900,
+  "grants": {
+    "allowedRooms": ["lobby", "room:101"],
+    "canPublish": true
+  },
+  "metadata": {
+    "username": "Alex",
+    "role": "moderator"
   }
 }
 \`\`\`
 
-### Authentication Error Response
-If authentication fails, the server emits a \`connect_error\` event and closes the socket:
+#### Client Handshake Payload
+The client connects using the minted token. Under OmniSocket v2.0, \`type: "client"\` is strictly required and tenant master credentials must not be passed:
+\`\`\`json
+{
+  "auth": {
+    "type": "client",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+\`\`\`
+
+---
+
+### 2. Server Mode Handshake (Backend Microservices / Daemons)
+Server microservices authenticate using their tenant master credentials. \`type: "server"\`, \`applicationId\`, \`apiKey\`, and \`userId\` are all strictly required:
+\`\`\`json
+{
+  "auth": {
+    "type": "server",
+    "applicationId": "ourtime",
+    "apiKey": "ourtime_secret_key_v1",
+    "userId": "backend_worker"
+  }
+}
+\`\`\`
+
+---
+
+### Authentication Error Responses
+If authentication fails during the Socket.IO handshake, the server emits a \`connect_error\` event and closes the socket:
 \`\`\`json
 {
   "status": "error",
   "code": "UNAUTHORIZED",
-  "message": "Authentication failed: Invalid application credentials"
+  "message": "<Error Message>"
 }
 \`\`\`
+
+Standard error messages:
+- **Missing or invalid type**: \`Missing or invalid connection type in handshake.auth (must be 'server' or 'client')\`
+- **Malformed client handshake**: \`Client connection requires token and must not include apiKey or applicationId\`
+- **Malformed server handshake**: \`Server connection requires applicationId, apiKey, and userId, and must not include token\`
+- **Invalid or expired token**: \`Authentication failed: Invalid or expired client connection token\`
+- **Invalid master credentials**: \`Authentication failed: Invalid application credentials\`
 `,
     });
 

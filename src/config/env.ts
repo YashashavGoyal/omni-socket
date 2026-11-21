@@ -27,6 +27,18 @@ const envSchema = z.object({
       return `omni_dev_${crypto.randomBytes(8).toString('hex')}`;
     }),
 
+  // Token Signing Secret (for Ephemeral Client Connection Tokens)
+  TOKEN_SIGNING_SECRET: z
+    .string()
+    .min(16, { message: 'TOKEN_SIGNING_SECRET must be at least 16 characters long' })
+    .default(() => {
+      if (process.env.TOKEN_SIGNING_SECRET) return process.env.TOKEN_SIGNING_SECRET;
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('TOKEN_SIGNING_SECRET environment variable is strictly required in production mode!');
+      }
+      return process.env.ADMIN_API_KEY || `omni_dev_${crypto.randomBytes(16).toString('hex')}`;
+    }),
+
   // Obfuscated Master Admin Dashboard Route Path
   ADMIN_PANEL_PATH: z.string().default('/omni-portal-k').refine((path) => {
     if (!path.startsWith('/') && path !== '') {
