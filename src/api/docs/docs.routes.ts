@@ -19,7 +19,19 @@ export async function registerDocsRoutes(server: FastifyInstance): Promise<void>
     );
   };
 
-  // 1. AI Agent Standard Endpoint GET /llms.txt
+  // 1. Root Discovery Endpoint GET /
+  server.get('/', async (req: FastifyRequest, reply: FastifyReply) => {
+    if (shouldReturnMarkdown(req)) {
+      const markdown = docsService.getRootRouteMarkdown();
+      return reply
+        .header('content-type', 'text/markdown; charset=utf-8')
+        .send(markdown);
+    }
+
+    return reply.send(docsService.getRootRouteIndex());
+  });
+
+  // 2. AI Agent Standard Endpoint GET /llms.txt
   server.get('/llms.txt', async (_req: FastifyRequest, reply: FastifyReply) => {
     const markdown = docsService.getFullAggregatedMarkdown();
     return reply

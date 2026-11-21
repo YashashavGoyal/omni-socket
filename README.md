@@ -140,6 +140,7 @@ Returns system health, active connections, room count, memory usage, and registe
 
 OmniSocket features built-in content-negotiated documentation endpoints so LLMs, AI coding assistants, and developers can fetch the live event contract directly from any running instance.
 
+* **GET `/`**: Root discovery endpoint returning a structured JSON directory of all public endpoints, their methods, and documentation links (supports Markdown via `Accept: text/markdown` or `?format=md`).
 * **GET `/llms.txt`**: Aggregated raw GitHub-Flavored Markdown for AI agents.
 * **GET `/docs`**: Topic index JSON (or raw Markdown if requested with `Accept: text/markdown` or `?format=md`).
 * **GET `/docs/overview`**: Handshake, authentication headers, error codes.
