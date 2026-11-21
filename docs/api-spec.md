@@ -240,33 +240,36 @@ await client.connect();
 
 ## 4. Operational REST Probes
 
-### 1. Liveness Probe
+### 1. Public Liveness Probe
 * **GET** `/health/live`
 * **Response**: `200 OK`
   ```json
   {
     "status": "ok",
-    "timestamp": "2026-11-20T00:00:00.000Z",
-    "uptimeSeconds": 3600.5
+    "version": "OmniSocket v2.0.0",
+    "timestamp": "2026-11-20T00:00:00.000Z"
   }
   ```
 
-### 2. Readiness Probe
+### 2. Internal Readiness Probe
 * **GET** `/health/ready`
 * **Response**: `200 OK`
   ```json
   {
     "status": "ready",
+    "version": "OmniSocket v2.0.0",
     "timestamp": "2026-11-20T00:00:00.000Z",
+    "uptimeSeconds": 3600.5,
     "subsystems": {
       "socketIO": "healthy",
       "connectionRegistry": "healthy",
-      "applicationRepository": "healthy"
+      "applicationRepository": "healthy",
+      "redis": "healthy"
     }
   }
   ```
 
-### 3. Metrics Probe
+### 3. Internal Metrics Probe
 * **GET** `/health/metrics`
 * **Response**: `200 OK`
   ```json
@@ -287,3 +290,17 @@ await client.connect();
     }
   }
   ```
+
+---
+
+## 5. API Discovery & Documentation Endpoints
+
+### 1. Root Route Directory (`GET /`)
+Returns a structured JSON directory of all available public endpoints, their methods, and documentation links.
+* **GET** `/`
+* **Response**: `200 OK` (JSON by default, or Markdown via `Accept: text/markdown` or `?format=md`)
+
+### 2. Documentation Endpoints
+* **GET** `/docs` — Available topics index or full Markdown.
+* **GET** `/docs/:topic` — Topic-specific documentation (`overview`, `rooms`, `presence`, `events`).
+* **GET** `/llms.txt` — Full aggregated Markdown specification optimized for AI agents and LLMs.

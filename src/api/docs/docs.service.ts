@@ -1,8 +1,38 @@
+import { APP_VERSION } from '../../config/version';
+
 export interface DocTopic {
   id: string;
   title: string;
   summary: string;
   markdownContent: string;
+}
+
+export interface RouteEndpoint {
+  method?: string;
+  path: string;
+  description: string;
+  authRequired?: boolean;
+  transport?: string;
+}
+
+export interface PublicRouteCategories {
+  documentation: RouteEndpoint[];
+  health: RouteEndpoint[];
+  authentication: RouteEndpoint[];
+  realtime: RouteEndpoint[];
+}
+
+export interface RootRouteIndex {
+  name: string;
+  version: string;
+  description: string;
+  status: string;
+  documentation: {
+    index: string;
+    markdown: string;
+    llms: string;
+  };
+  routes: PublicRouteCategories;
 }
 
 export class DocsService {
@@ -237,6 +267,90 @@ socket.emit("event:emit", {
     }
 
     return fullDoc;
+  }
+
+  public getRootRouteIndex(): RootRouteIndex {
+    return {
+      name: 'OmniSocket Realtime Engine',
+      version: APP_VERSION,
+      description: 'Standalone, multi-tenant, application-agnostic realtime Socket.IO server infrastructure.',
+      status: 'online',
+      documentation: {
+        index: '/docs',
+        markdown: '/docs?format=md',
+        llms: '/llms.txt',
+      },
+      routes: {
+        documentation: [
+          {
+            method: 'GET',
+            path: '/docs',
+            description: 'Topic index and full API contracts (JSON or Markdown via Accept: text/markdown or ?format=md)',
+          },
+          {
+            method: 'GET',
+            path: '/docs/:topic',
+            description: 'Topic-specific documentation (overview, rooms, presence, events)',
+          },
+          {
+            method: 'GET',
+            path: '/llms.txt',
+            description: 'Aggregated GitHub-Flavored Markdown documentation tailored for AI agents and LLMs',
+          },
+        ],
+        health: [
+          {
+            method: 'GET',
+            path: '/health/live',
+            description: 'Public liveness probe for monitoring and container orchestrators (returns 200 OK when server is running)',
+          },
+        ],
+        authentication: [
+          {
+            method: 'POST',
+            path: '/api/v1/auth/tokens',
+            description: 'Mint short-lived signed client connection tokens (requires x-application-id and x-api-key headers)',
+            authRequired: true,
+          },
+        ],
+        realtime: [
+          {
+            transport: 'WebSocket / Polling',
+            path: '/socket.io/',
+            description: "Socket.IO real-time connection endpoint supporting dual-mode authentication ('client' with token or 'server' with master credentials)",
+          },
+        ],
+      },
+    };
+  }
+
+  public getRootRouteMarkdown(): string {
+    const info = this.getRootRouteIndex();
+    let md = `# 🚀 ${info.name} (v${info.version})\n\n`;
+    md += `> ${info.description}\n\n`;
+    md += `## 📖 Public Route Directory\n\n`;
+
+    md += `### 📚 Documentation\n`;
+    for (const r of info.routes.documentation) {
+      md += `- \`${r.method} ${r.path}\` - ${r.description}\n`;
+    }
+
+    md += `\n### 🩺 Health & Observability\n`;
+    for (const r of info.routes.health) {
+      md += `- \`${r.method} ${r.path}\` - ${r.description}\n`;
+    }
+
+    md += `\n### 🔐 Authentication\n`;
+    for (const r of info.routes.authentication) {
+      md += `- \`${r.method} ${r.path}\` - ${r.description}\n`;
+    }
+
+    md += `\n### ⚡ Realtime Transport\n`;
+    for (const r of info.routes.realtime) {
+      md += `- \`${r.transport} ${r.path}\` - ${r.description}\n`;
+    }
+
+    return md;
   }
 }
 

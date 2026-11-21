@@ -10,7 +10,6 @@ export class HealthService {
       status: 'ok',
       version: `OmniSocket v${APP_VERSION}`,
       timestamp: new Date().toISOString(),
-      uptimeSeconds: Number(process.uptime().toFixed(2)),
     };
   }
 
@@ -27,6 +26,7 @@ export class HealthService {
       status: isFullyReady ? 'ready' : 'not_ready',
       version: `OmniSocket v${APP_VERSION}`,
       timestamp: new Date().toISOString(),
+      uptimeSeconds: Number(process.uptime().toFixed(2)),
       subsystems: {
         socketIO: isSocketReady ? 'healthy' : 'unhealthy',
         connectionRegistry: isRegistryReady ? 'healthy' : 'unhealthy',

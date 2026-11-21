@@ -16,6 +16,44 @@ describe('Self-Documenting REST & AI Agent Markdown Subsystem', () => {
     await server.close();
   });
 
+  it('should return structured JSON route directory on GET / by default', async () => {
+    const res = await server.inject({
+      method: 'GET',
+      url: '/',
+    });
+
+    expect(res.statusCode).toBe(200);
+    const json = JSON.parse(res.payload);
+    expect(json.name).toBe('OmniSocket Realtime Engine');
+    expect(json.version).toBeDefined();
+    expect(json.status).toBe('online');
+    expect(json.documentation.index).toBe('/docs');
+    expect(json.routes.documentation).toBeInstanceOf(Array);
+    expect(json.routes.health).toBeInstanceOf(Array);
+    expect(json.routes.health).toHaveLength(1);
+    expect(json.routes.health[0].path).toBe('/health/live');
+    expect(json.routes.authentication).toBeInstanceOf(Array);
+    expect(json.routes.realtime).toBeInstanceOf(Array);
+  });
+
+  it('should return Markdown route directory on GET / when Accept header is text/markdown', async () => {
+    const res = await server.inject({
+      method: 'GET',
+      url: '/',
+      headers: {
+        accept: 'text/markdown',
+      },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('text/markdown');
+    expect(res.payload).toContain('OmniSocket Realtime Engine');
+    expect(res.payload).toContain('Public Route Directory');
+    expect(res.payload).toContain('/docs');
+    expect(res.payload).toContain('/health/live');
+    expect(res.payload).toContain('/api/v1/auth/tokens');
+  });
+
   it('should serve raw Markdown on GET /llms.txt for AI agents', async () => {
     const res = await server.inject({
       method: 'GET',
